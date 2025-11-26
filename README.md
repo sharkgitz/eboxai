@@ -1,61 +1,82 @@
-# 📧 eBoxAI: The Prompt-Driven Email Agent
+<div align="center">
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
-![React](https://img.shields.io/badge/react-v18+-61DAFB.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)
+# 📧 eBoxAI
+### The Intelligent, Prompt-Driven Email Agent
 
-> **Transform your inbox from a chore into a command center.**  
-> eBoxAI uses advanced LLMs to categorize, summarize, and draft replies for your emails, all controlled by your custom prompts.
+![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)
+![Python](https://img.shields.io/badge/python-v3.9+-blue.svg?style=for-the-badge&logo=python)
+![React](https://img.shields.io/badge/react-v18+-61DAFB.svg?style=for-the-badge&logo=react)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+
+<br />
+
+> **"Stop managing emails. Start commanding them."**
+
+eBoxAI transforms your inbox from a chaotic list into a structured, AI-powered command center.  
+Categorize, summarize, and draft replies automatically—all controlled by your natural language prompts.
+
+[Features](#-features) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Roadmap](#-roadmap)
+
+</div>
 
 ---
 
 ## ✨ Features
 
-### 🧠 Prompt Brain
-**You are in control.** Customize exactly how the agent "thinks" by editing natural language prompts. Tell it to prioritize emails from your boss or ignore newsletters about sales.
+### 🧠 **Prompt Brain**
+**You are the architect.** Unlike black-box AI tools, eBoxAI lets you see and edit the exact prompts that drive the agent.
+- *Tell it to be formal with clients.*
+- *Tell it to be brief with internal updates.*
+- *Tell it to ignore "limited time offers".*
 
-### 🏷️ Auto-Categorization
-Automatically tags incoming emails with smart categories:
-- **🔴 Important**: Urgent work emails, deadlines.
-- **🔵 Newsletter**: Weekly digests, industry news.
-- **🟡 To-Do**: Actionable items requiring your attention.
-- **⚪ Spam**: Promotional offers and junk.
+### 🏷️ **Smart Categorization**
+Forget manual sorting. The agent reads and tags every email instantly:
+- **🔴 Important**: Urgent deadlines, boss requests, high-priority clients.
+- **🔵 Newsletter**: Weekly digests, industry updates (kept out of your way).
+- **🟡 To-Do**: Actionable items requiring your specific attention.
+- **⚪ Spam**: Junk that slipped through the cracks.
 
-### 📝 Action Extraction & Drafting
-- **Smart Extraction**: Detects tasks, deadlines, and meetings automatically.
-- **Auto-Drafting**: Generates context-aware reply drafts for you to review and send.
+### 📝 **Action Extraction & Auto-Drafting**
+- **Action Items**: Automatically extracts tasks like *"Submit report by Friday"* or *"Call John at 2pm"*.
+- **Draft Replies**: Pre-generates context-aware replies. You just review and hit send.
 
-### 💬 Agent Chat
-**Talk to your inbox.** Ask questions like:
-- *"What is the most urgent thing I need to do today?"*
-- *"Summarize the email from John about the project."*
-- *"Draft a polite decline to the invitation."*
+### 💬 **Agent Chat (RAG-Lite)**
+**Talk to your inbox.**
+- *"What did my boss ask for last week?"*
+- *"Do I have any pending invoices?"*
+- *"Draft a polite decline to the webinar invitation."*
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| **Backend** | Python, FastAPI, SQLAlchemy, Google Gemini API |
-| **Frontend** | React, Vite, Tailwind CSS, Framer Motion |
-| **Database** | SQLite (Local & Fast) |
-| **Icons** | Lucide React |
+| Layer | Technology | Why? |
+|-------|------------|------|
+| **Backend** | **Python, FastAPI** | High-performance async API with easy AI integration. |
+| **AI Engine** | **Google Gemini API** | State-of-the-art LLM for reasoning and generation. |
+| **Frontend** | **React, Vite** | Blazing fast, modern UI development. |
+| **Styling** | **Tailwind CSS** | Beautiful, responsive designs with "Linear-style" aesthetics. |
+| **Database** | **SQLite** | Zero-config, local, and fast. |
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
+<details>
+<summary><strong>📋 Prerequisites</strong></summary>
+
 - **Node.js** (v18+)
 - **Python** (v3.9+)
-- **Google Gemini API Key** (Optional, for live LLM features)
+- **Google Gemini API Key** (Optional, defaults to Mock Mode)
+</details>
 
-### 1️⃣ Backend Setup
+<details>
+<summary><strong>🐍 Backend Setup</strong></summary>
+
 ```bash
 cd backend
 python -m venv venv
+
 # Windows
 .\venv\Scripts\activate
 # Mac/Linux
@@ -68,38 +89,65 @@ pip install -r requirements.txt
 
 uvicorn backend.main:app --reload
 ```
-*API will be live at `http://localhost:8000`*
+</details>
 
-### 2️⃣ Frontend Setup
+<details>
+<summary><strong>⚛️ Frontend Setup</strong></summary>
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*UI will be live at `http://localhost:5173`*
+</details>
 
 ---
 
-## 📖 Usage Guide
+## 📂 Project Structure
 
-1.  **Load Inbox**: Click the **Refresh** icon 🔄 to load the mock inbox.
-2.  **Run Agent**: Hit **Run Agent** ▶️ to categorize and process all emails.
-3.  **Review**: Click any email to see AI insights, action items, and drafts.
-4.  **Chat**: Switch to the **Agent** tab to converse with your email data.
-
----
-
-## 🎨 Customization
-
-- **Prompts**: Edit `backend/data/default_prompts.json` or use the **Brain** tab in the UI.
-- **Mock Data**: Modify `backend/data/mock_inbox.json` to test different scenarios.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+eboxai/
+├── backend/
+│   ├── routers/          # API Endpoints (Inbox, Agent, Prompts)
+│   ├── services/         # Business Logic (LLM, Email Processing)
+│   ├── data/             # Mock Data & Default Prompts
+│   └── main.py           # Application Entry Point
+├── frontend/
+│   ├── src/
+│   │   ├── components/   # Reusable UI Components
+│   │   ├── pages/        # Main Views (Inbox, Dashboard, Agent)
+│   │   └── api.ts        # Backend Integration
+│   └── tailwind.config.js # Design System Configuration
+└── README.md
+```
 
 ---
 
-Made with ❤️ by [SharkGitz](https://github.com/sharkgitz)
+## 🗺️ Roadmap
+
+- [x] **Core Agent Engine**: Categorization, Extraction, Drafting.
+- [x] **Modern UI**: Dark mode, Glassmorphism, Responsive layout.
+- [x] **Agent Chat**: Context-aware Q&A with inbox data.
+- [ ] **Real Email Integration**: Connect via IMAP/SMTP (Gmail, Outlook).
+- [ ] **Voice Commands**: Control your agent with voice.
+- [ ] **Multi-Agent Mode**: Specialized agents for different workflows (Sales, HR).
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+<div align="center">
+
+**Made with ❤️ by [SharkGitz](https://github.com/sharkgitz)**
+
+</div>
