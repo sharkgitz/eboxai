@@ -1,0 +1,63 @@
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
+from pathlib import Path
+
+print("Loading LLM Service...")
+try:
+    env_path = Path(__file__).resolve().parent.parent / '.env'
+    print(f"Loading .env from: {env_path}")
+    
+    if env_path.exists():
+        with open(env_path, 'r') as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    key, value = line.strip().split('=', 1)
+                    os.environ[key] = value
+                    print(f"Set {key} manually.")
+    else:
+        print(".env file not found!")
+
+    key = os.getenv("GEMINI_API_KEY")
+except Exception as e:
+    print(f"Env loading error: {e}")
+
+class LLMService:
+    def __init__(self):
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        if self.api_key:
+            genai.configure(api_key=self.api_key)
+            self.model = genai.GenerativeModel('gemini-2.0-flash')
+            self.is_mock = False
+        else:
+            self.is_mock = True
+            print("Warning: GEMINI_API_KEY not found. Using Mock LLM.")
+
+    def generate_text(self, prompt: str) -> str:
+        if self.is_mock:
+            return self._mock_response(prompt)
+        
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            print(f"LLM Error: {e}")
+            return self._mock_response(prompt)
+
+    def _mock_response(self, prompt: str) -> str:
+        # Simple heuristic mock responses for demo
+        if "Categorize" in prompt:
+            if "Urgent" in prompt or "Report" in prompt: return "Important"
+            if "Newsletter" in prompt: return "Newsletter"
+            if "won a cruise" in prompt: return "Spam"
+            return "Uncategorized"
+        
+        if "Extract action items" in prompt:
+            return '[{"description": "Review report", "deadline": "tomorrow"}]'
+        
+        if "Draft a" in prompt:
+            return "Dear Sender,\n\nThank you for your email. I have received it and will get back to you shortly.\n\nBest,\nAgent"
+        
+        return "I am a mock agent. Please provide a GEMINI_API_KEY for real intelligence."
+
+llm_service = LLMService()

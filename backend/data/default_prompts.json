@@ -1,0 +1,17 @@
+[
+    {
+        "name": "Categorization",
+        "template": "Categorize the following email into one of these categories: Important, Newsletter, Spam, To-Do, Personal. \n\nEmail:\nSubject: {subject}\nBody: {body}\n\nCategory:",
+        "prompt_type": "categorization"
+    },
+    {
+        "name": "Action Extraction",
+        "template": "Extract action items from the email. Return a JSON list of objects with 'description' and 'deadline' fields. If no deadline, use null.\n\nEmail:\n{body}\n\nAction Items (JSON):",
+        "prompt_type": "extraction"
+    },
+    {
+        "name": "Auto-Reply",
+        "template": "Draft a polite professional reply to this email. If it's a meeting request, ask for an agenda. If it's a task, confirm receipt and estimated time.\n\nEmail:\n{body}\n\nDraft Reply:",
+        "prompt_type": "reply"
+    }
+]

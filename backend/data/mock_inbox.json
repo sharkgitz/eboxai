@@ -1,0 +1,82 @@
+[
+    {
+        "id": "msg_001",
+        "sender": "boss@company.com",
+        "subject": "Urgent: Q4 Report Due",
+        "body": "Hi,\n\nI need the Q4 report by EOD tomorrow. Please make sure to include the sales figures.\n\nThanks,\nBoss",
+        "timestamp": "2023-10-25T09:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_002",
+        "sender": "newsletter@techweekly.com",
+        "subject": "Tech Weekly: AI is taking over",
+        "body": "This week in tech: AI agents are the new hotness. Read more...",
+        "timestamp": "2023-10-25T10:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_003",
+        "sender": "recruiter@linkedin.com",
+        "subject": "New Job Opportunity",
+        "body": "Hi,\n\nWe have a great opportunity for a Senior Engineer role. Are you interested?",
+        "timestamp": "2023-10-24T14:30:00",
+        "is_read": true
+    },
+    {
+        "id": "msg_004",
+        "sender": "spam@offers.com",
+        "subject": "You won a cruise!",
+        "body": "Click here to claim your prize.",
+        "timestamp": "2023-10-24T08:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_005",
+        "sender": "team@project.com",
+        "subject": "Meeting: Sprint Planning",
+        "body": "Hi Team,\n\nLet's meet on Monday at 10 AM for sprint planning. Please update your tickets.\n\nBest,\nPM",
+        "timestamp": "2023-10-26T11:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_006",
+        "sender": "client@bigcorp.com",
+        "subject": "Feedback on Design",
+        "body": "Hello,\n\nWe reviewed the latest designs. We love the color scheme but the logo is too small. Can you fix it by Friday?\n\nRegards,\nClient",
+        "timestamp": "2023-10-26T15:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_007",
+        "sender": "noreply@github.com",
+        "subject": "[GitHub] Security Alert",
+        "body": "We found a potential security vulnerability in your repository. Please review immediately.",
+        "timestamp": "2023-10-27T01:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_008",
+        "sender": "mom@family.com",
+        "subject": "Dinner on Sunday?",
+        "body": "Hi honey, are you coming over for dinner this Sunday? Let me know.",
+        "timestamp": "2023-10-27T18:00:00",
+        "is_read": true
+    },
+    {
+        "id": "msg_009",
+        "sender": "billing@aws.com",
+        "subject": "Invoice Available",
+        "body": "Your AWS invoice for October is ready. Total: $12.34.",
+        "timestamp": "2023-11-01T00:00:00",
+        "is_read": false
+    },
+    {
+        "id": "msg_010",
+        "sender": "colleague@work.com",
+        "subject": "Code Review Request",
+        "body": "Hey, can you review my PR? It's blocking the release.",
+        "timestamp": "2023-11-01T10:30:00",
+        "is_read": false
+    }
+]
