@@ -1,79 +1,105 @@
-# Prompt-Driven Email Productivity Agent
+# 📧 eBoxAI: The Prompt-Driven Email Agent
 
-An intelligent, AI-powered email agent that categorizes emails, extracts action items, and drafts replies based on user-defined prompts.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
+![React](https://img.shields.io/badge/react-v18+-61DAFB.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)
 
-## Features
+> **Transform your inbox from a chore into a command center.**  
+> eBoxAI uses advanced LLMs to categorize, summarize, and draft replies for your emails, all controlled by your custom prompts.
 
-- **Prompt Brain**: Customize how the agent thinks by editing natural language prompts for categorization, extraction, and drafting.
-- **Auto-Categorization**: Automatically tags emails as Important, Newsletter, Spam, etc.
-- **Action Extraction**: Detects tasks and deadlines from email bodies.
-- **Agent Chat**: Chat with your inbox to ask questions like "What is urgent?" or "Draft a reply to Mom".
-- **Mock Inbox**: Comes with a built-in mock inbox for demonstration.
-- **Modern UI**: Built with React, Tailwind CSS, and Framer Motion for a premium experience.
+---
 
-## Tech Stack
+## ✨ Features
 
-- **Backend**: Python, FastAPI, SQLAlchemy, Google Gemini API
-- **Frontend**: React, Vite, Tailwind CSS, Lucide Icons
-- **Database**: SQLite (local)
+### 🧠 Prompt Brain
+**You are in control.** Customize exactly how the agent "thinks" by editing natural language prompts. Tell it to prioritize emails from your boss or ignore newsletters about sales.
 
-## Setup Instructions
+### 🏷️ Auto-Categorization
+Automatically tags incoming emails with smart categories:
+- **🔴 Important**: Urgent work emails, deadlines.
+- **🔵 Newsletter**: Weekly digests, industry news.
+- **🟡 To-Do**: Actionable items requiring your attention.
+- **⚪ Spam**: Promotional offers and junk.
+
+### 📝 Action Extraction & Drafting
+- **Smart Extraction**: Detects tasks, deadlines, and meetings automatically.
+- **Auto-Drafting**: Generates context-aware reply drafts for you to review and send.
+
+### 💬 Agent Chat
+**Talk to your inbox.** Ask questions like:
+- *"What is the most urgent thing I need to do today?"*
+- *"Summarize the email from John about the project."*
+- *"Draft a polite decline to the invitation."*
+
+---
+
+## 🛠️ Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| **Backend** | Python, FastAPI, SQLAlchemy, Google Gemini API |
+| **Frontend** | React, Vite, Tailwind CSS, Framer Motion |
+| **Database** | SQLite (Local & Fast) |
+| **Icons** | Lucide React |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- Python (v3.9+)
-- Google Gemini API Key (optional, falls back to Mock mode)
+- **Node.js** (v18+)
+- **Python** (v3.9+)
+- **Google Gemini API Key** (Optional, for live LLM features)
 
-### Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create a virtual environment and activate it:
-   ```bash
-   python -m venv venv
-   # Windows
-   .\venv\Scripts\activate
-   # Mac/Linux
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. (Optional) Set up your Gemini API Key:
-   - Copy `.env.example` to `.env`
-   - Add your key: `GEMINI_API_KEY=your_key_here`
-5. Run the server:
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-   The API will be available at `http://localhost:8000`.
+### 1️⃣ Backend Setup
+```bash
+cd backend
+python -m venv venv
+# Windows
+.\venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
 
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-   The UI will be available at `http://localhost:5173`.
+pip install -r requirements.txt
 
-## Usage Guide
+# (Optional) Add your API Key
+# Copy .env.example to .env and add GEMINI_API_KEY=...
 
-1. **Load Inbox**: On the Inbox page, click the "Refresh" icon to load the mock inbox data.
-2. **Process Emails**: Click the "Play" button to run the agent on all emails. This will categorize them and extract action items.
-3. **View Details**: Click on any email to see the extracted insights and generated drafts.
-4. **Edit Prompts**: Go to the "Brain" tab to modify the prompts used by the agent.
-5. **Chat with Agent**: Go to the "Agent" tab to ask free-form questions about your emails.
+uvicorn backend.main:app --reload
+```
+*API will be live at `http://localhost:8000`*
 
-## Customization
+### 2️⃣ Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*UI will be live at `http://localhost:5173`*
 
-You can modify the default prompts in `backend/data/default_prompts.json` or directly in the UI.
-The mock data is located in `backend/data/mock_inbox.json`.
+---
+
+## 📖 Usage Guide
+
+1.  **Load Inbox**: Click the **Refresh** icon 🔄 to load the mock inbox.
+2.  **Run Agent**: Hit **Run Agent** ▶️ to categorize and process all emails.
+3.  **Review**: Click any email to see AI insights, action items, and drafts.
+4.  **Chat**: Switch to the **Agent** tab to converse with your email data.
+
+---
+
+## 🎨 Customization
+
+- **Prompts**: Edit `backend/data/default_prompts.json` or use the **Brain** tab in the UI.
+- **Mock Data**: Modify `backend/data/mock_inbox.json` to test different scenarios.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+Made with ❤️ by [SharkGitz](https://github.com/sharkgitz)
