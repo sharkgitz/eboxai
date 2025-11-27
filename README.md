@@ -40,6 +40,15 @@ Forget manual sorting. The agent reads and tags every email instantly:
 - **Action Items**: Automatically extracts tasks like *"Submit report by Friday"* or *"Call John at 2pm"*.
 - **Draft Replies**: Pre-generates context-aware replies. You just review and hit send.
 
+### 🛡️ **Security & Intelligence**
+- **Dark Pattern Detector**: Warns you about manipulative emails (Fake Urgency, Scarcity).
+- **Sentiment Analysis**: Instantly see the emotional tone of emails (😊 😐 😤).
+- **Smart Follow-Ups**: Tracks your commitments and what others owe you.
+
+### 🗓️ **Meeting Prep Assistant**
+- **Auto-Briefs**: Generates executive briefs for upcoming meetings.
+- **Context Retrieval**: Summarizes past threads and suggests talking points.
+
 ### 💬 **Agent Chat (RAG-Lite)**
 **Talk to your inbox.**
 - *"What did my boss ask for last week?"*
@@ -128,6 +137,8 @@ eboxai/
 - [x] **Core Agent Engine**: Categorization, Extraction, Drafting.
 - [x] **Modern UI**: Dark mode, Glassmorphism, Responsive layout.
 - [x] **Agent Chat**: Context-aware Q&A with inbox data.
+- [x] **Advanced Analytics**: Mission Control Dashboard with live feed.
+- [x] **Meeting Prep**: AI-generated briefs and context.
 - [ ] **Real Email Integration**: Connect via IMAP/SMTP (Gmail, Outlook).
 - [ ] **Voice Commands**: Control your agent with voice.
 - [ ] **Multi-Agent Mode**: Specialized agents for different workflows (Sales, HR).
