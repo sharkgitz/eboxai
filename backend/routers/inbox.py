@@ -12,8 +12,13 @@ router = APIRouter(
 
 @router.post("/load")
 def load_inbox(db: Session = Depends(get_db)):
-    inbox_service.load_mock_data(db)
-    return {"message": "Inbox loaded successfully"}
+    try:
+        inbox_service.load_mock_data(db)
+        return {"message": "Inbox loaded successfully"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=List[EmailDetail])
 def read_emails(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):

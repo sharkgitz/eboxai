@@ -1,0 +1,54 @@
+Loading LLM Service...
+Loading .env from: C:\Users\vaish\eboxai\email-agent\backend\.env
+Set GEMINI_API_KEY manually.
+============================= test session starts =============================
+platform win32 -- Python 3.12.5, pytest-9.0.1, pluggy-1.6.0
+rootdir: C:\Users\vaish\eboxai\email-agent
+plugins: anyio-4.4.0, langsmith-0.4.13
+collected 4 items
+
+backend\tests\test_api.py ...Agent Chat Failed: {"detail":[{"type":"string_type","loc":["body","email_id"],"msg":"Input should be a valid string","input":null}]}
+F
+
+================================== FAILURES ===================================
+_______________________________ test_agent_chat _______________________________
+
+client = <starlette.testclient.TestClient object at 0x000001D8E9F3EEA0>
+
+    def test_agent_chat(client):
+        # Load data for context
+        client.post("/inbox/load")
+    
+        payload = {
+            "query": "What is in my inbox?",
+            "email_id": None
+        }
+        response = client.post("/agent/chat", json=payload)
+        if response.status_code != 200:
+            print(f"Agent Chat Failed: {response.text}")
+>       assert response.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+backend\tests\test_api.py:37: AssertionError
+============================== warnings summary ===============================
+backend\database.py:12
+  C:\Users\vaish\eboxai\email-agent\backend\database.py:12: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:323
+..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:323
+..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:323
+..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:323
+  C:\Users\vaish\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:373
+  C:\Users\vaish\AppData\Local\Programs\Python\Python312\Lib\site-packages\pydantic\_internal\_config.py:373: UserWarning: Valid config keys have changed in V2:
+  * 'orm_mode' has been renamed to 'from_attributes'
+    warnings.warn(message, UserWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend/tests/test_api.py::test_agent_chat - assert 422 == 200
+=================== 1 failed, 3 passed, 6 warnings in 0.36s ===================

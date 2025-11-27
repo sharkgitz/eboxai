@@ -18,6 +18,13 @@ def load_mock_data(db: Session):
                 for email_data in emails_data:
                     # Convert timestamp string to datetime
                     email_data["timestamp"] = datetime.fromisoformat(email_data["timestamp"])
+                    # Set defaults for new fields
+                    email_data.setdefault("sentiment", "neutral")
+                    email_data.setdefault("emotion", "neutral")
+                    email_data.setdefault("urgency_score", 5)
+                    email_data.setdefault("has_dark_patterns", False)
+                    email_data.setdefault("dark_patterns", "[]")  # JSON string
+                    email_data.setdefault("dark_pattern_severity", "low")
                     db_email = Email(**email_data)
                     db.add(db_email)
             db.commit()

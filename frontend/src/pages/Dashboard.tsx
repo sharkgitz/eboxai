@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
 import { inboxApi } from '../api';
 import type { Email } from '../api';
-import { BarChart, Activity, CheckCircle, Mail, Clock, ArrowUpRight, Sparkles } from 'lucide-react';
+import {
+    BarChart3, Activity, CheckCircle, Mail,
+    ShieldAlert, Zap, TrendingUp, Brain, AlertTriangle
+} from 'lucide-react';
 import { clsx } from 'clsx';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+    PieChart, Pie, Cell, Legend
+} from 'recharts';
 
 const Dashboard = () => {
     const [emails, setEmails] = useState<Email[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activityLog, setActivityLog] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchEmails = async () => {
             try {
                 const res = await inboxApi.getAll();
                 setEmails(res.data);
+                generateActivityLog(res.data);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -22,97 +32,239 @@ const Dashboard = () => {
         fetchEmails();
     }, []);
 
+    // Simulate live activity feed
+    useEffect(() => {
+        if (loading) return;
+        const interval = setInterval(() => {
+            const actions = [
+                "Analyzing sentiment for incoming email...",
+                "Detecting dark patterns...",
+                "Extracting action items...",
+                "Updating urgency scores...",
+                "Syncing with knowledge base..."
+            ];
+            const randomAction = actions[Math.floor(Math.random() * actions.length)];
+            setActivityLog(prev => [randomAction, ...prev].slice(0, 5));
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [loading]);
+
+    const generateActivityLog = (data: Email[]) => {
+        const logs = data.slice(0, 5).map(e => `Processed email from ${e.sender}: ${e.subject.substring(0, 30)}...`);
+        setActivityLog(logs);
+    };
+
     const stats = {
         total: emails.length,
         unread: emails.filter(e => !e.is_read).length,
         actionItems: emails.reduce((acc, e) => acc + (e.action_items?.length || 0), 0),
-        categories: emails.reduce((acc, e) => {
-            acc[e.category] = (acc[e.category] || 0) + 1;
+        darkPatterns: emails.filter(e => e.has_dark_patterns).length,
+        urgent: emails.filter(e => (e.urgency_score || 0) >= 7).length
+    };
+
+    // Mock data for charts (since we don't have historical data in the mock DB)
+    const sentimentData = [
+        { name: 'Mon', positive: 4, negative: 2, neutral: 5 },
+        { name: 'Tue', positive: 3, negative: 4, neutral: 6 },
+        { name: 'Wed', positive: 6, negative: 1, neutral: 4 },
+        { name: 'Thu', positive: 8, negative: 2, neutral: 5 },
+        { name: 'Fri', positive: 5, negative: 3, neutral: 7 },
+        { name: 'Sat', positive: 2, negative: 1, neutral: 3 },
+        { name: 'Sun', positive: 3, negative: 0, neutral: 2 },
+    ];
+
+    const darkPatternData = [
+        { subject: 'Fake Urgency', A: 120, fullMark: 150 },
+        { subject: 'Scarcity', A: 98, fullMark: 150 },
+        { subject: 'Social Proof', A: 86, fullMark: 150 },
+        { subject: 'Obstruction', A: 99, fullMark: 150 },
+        { subject: 'Sneaking', A: 85, fullMark: 150 },
+        { subject: 'Forced Action', A: 65, fullMark: 150 },
+    ];
+
+    const cleanCategory = (cat: string) => {
+        // Remove markdown bolding
+        let clean = cat.replace(/\*\*/g, '').replace(/\*/g, '');
+        // If it's very long (likely a reasoning sentence), try to extract the first few words or just truncate
+        if (clean.length > 30) {
+            return clean.substring(0, 30) + "...";
+        }
+        return clean;
+    };
+
+    const categoryData = Object.entries(
+        emails.reduce((acc, e) => {
+            const cat = cleanCategory(e.category);
+            acc[cat] = (acc[cat] || 0) + 1;
             return acc;
         }, {} as Record<string, number>)
-    };
+    ).map(([name, value]) => ({ name, value }));
+
+    const COLORS = ['#5E6AD2', '#22C55E', '#EAB308', '#EF4444', '#8B5CF6'];
 
     if (loading) {
         return (
             <div className="h-full flex items-center justify-center text-text-tertiary">
                 <Activity className="animate-spin mb-2 text-brand-500" size={24} />
-                <span className="ml-2 text-sm font-medium">Loading dashboard...</span>
+                <span className="ml-2 text-sm font-medium">Initializing Mission Control...</span>
             </div>
         );
     }
 
     return (
-        <div className="p-8 h-full overflow-y-auto">
-            <header className="mb-8 animate-fade-in">
-                <h1 className="text-3xl font-bold text-text-primary mb-2">Overview</h1>
-                <p className="text-text-secondary">Welcome back. Here's what's happening in your inbox.</p>
+        <div className="p-6 h-full overflow-y-auto bg-background">
+            <header className="mb-6 flex justify-between items-end animate-fade-in">
+                <div>
+                    <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+                        <Activity className="text-brand-500" />
+                        Mission Control
+                    </h1>
+                    <p className="text-text-secondary text-sm">Real-time email intelligence and threat monitoring</p>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-text-tertiary bg-surface border border-border px-3 py-1 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    System Online
+                </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4 animate-slide-up">
-                <BentoCard
-                    className="md:col-span-2 lg:col-span-2 bg-gradient-to-br from-surface to-surfaceHighlight"
-                    title="Total Emails"
+            {/* Top Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-slide-up">
+                <StatCard
+                    title="Total Processed"
                     value={stats.total}
                     icon={Mail}
-                    trend="+12% from last week"
+                    trend="+12%"
+                    color="text-brand-500"
+                    bg="bg-brand-500/10"
                 />
-                <BentoCard
+                <StatCard
+                    title="Threats Blocked"
+                    value={stats.darkPatterns}
+                    icon={ShieldAlert}
+                    trend="+5%"
+                    color="text-red-500"
+                    bg="bg-red-500/10"
+                />
+                <StatCard
                     title="Action Items"
                     value={stats.actionItems}
                     icon={CheckCircle}
-                    highlight
+                    trend="-2%"
+                    color="text-green-500"
+                    bg="bg-green-500/10"
                 />
-                <BentoCard
-                    title="Unread"
-                    value={stats.unread}
-                    icon={Clock}
+                <StatCard
+                    title="Urgent Emails"
+                    value={stats.urgent}
+                    icon={Zap}
+                    trend="+8%"
+                    color="text-yellow-500"
+                    bg="bg-yellow-500/10"
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-6 hover:border-brand-500/30 transition-colors duration-300">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-                            <BarChart size={18} className="text-text-secondary" />
-                            Category Distribution
-                        </h2>
+            {/* Charts Row 1 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Sentiment Trend */}
+                <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-6 shadow-sm">
+                    <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <TrendingUp size={16} className="text-brand-500" />
+                        Emotional Pulse (Last 7 Days)
+                    </h2>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={sentimentData}>
+                                <defs>
+                                    <linearGradient id="colorPos" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#22C55E" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorNeg" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
+                                <XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1E1E1E', borderColor: '#333', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#E0E0E0' }}
+                                />
+                                <Area type="monotone" dataKey="positive" stroke="#22C55E" fillOpacity={1} fill="url(#colorPos)" />
+                                <Area type="monotone" dataKey="negative" stroke="#EF4444" fillOpacity={1} fill="url(#colorNeg)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="space-y-4">
-                        {Object.entries(stats.categories).map(([cat, count]) => (
-                            <div key={cat} className="group">
-                                <div className="flex justify-between text-sm mb-1.5">
-                                    <span className="text-text-secondary capitalize group-hover:text-text-primary transition-colors">{cat}</span>
-                                    <span className="text-text-primary font-medium">{count}</span>
-                                </div>
-                                <div className="h-1.5 bg-surfaceHighlight rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-brand-500 rounded-full transition-all duration-500 ease-out group-hover:bg-brand-400"
-                                        style={{ width: `${(count / stats.total) * 100}%` }}
-                                    />
-                                </div>
+                </div>
+
+                {/* Dark Pattern Radar */}
+                <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
+                    <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <AlertTriangle size={16} className="text-red-500" />
+                        Threat Analysis
+                    </h2>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={darkPatternData}>
+                                <PolarGrid stroke="#333" opacity={0.2} />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#888', fontSize: 10 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
+                                <Radar name="Threats" dataKey="A" stroke="#EF4444" fill="#EF4444" fillOpacity={0.3} />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Charts Row 2 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Live Activity Feed */}
+                <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-6 shadow-sm flex flex-col">
+                    <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <Brain size={16} className="text-brand-500" />
+                        Live Neural Activity
+                    </h2>
+                    <div className="flex-1 space-y-3 overflow-hidden">
+                        {activityLog.map((log, i) => (
+                            <div key={i} className="flex items-center gap-3 text-sm animate-fade-in">
+                                <span className="text-xs font-mono text-text-tertiary">{new Date().toLocaleTimeString()}</span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                                <span className="text-text-secondary">{log}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="bg-surface border border-border rounded-xl p-6 hover:border-brand-500/30 transition-colors duration-300 flex flex-col">
-                    <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-                        <Sparkles size={18} className="text-brand-500" />
-                        AI Insights
+                {/* Category Distribution */}
+                <div className="bg-surface border border-border rounded-xl p-6 shadow-sm">
+                    <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <BarChart3 size={16} className="text-blue-500" />
+                        Classification
                     </h2>
-                    <div className="flex-1 space-y-3">
-                        {emails.slice(0, 4).map(email => (
-                            <div key={email.id} className="p-3 rounded-lg bg-surfaceHighlight/50 hover:bg-surfaceHighlight transition-colors cursor-pointer group border border-transparent hover:border-border">
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className="text-xs font-medium text-brand-500 bg-brand-500/10 px-1.5 py-0.5 rounded capitalize">
-                                        {email.category}
-                                    </span>
-                                    <ArrowUpRight size={14} className="text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                                <div className="text-sm font-medium text-text-primary truncate">{email.subject}</div>
-                                <div className="text-xs text-text-secondary truncate mt-0.5">{email.sender}</div>
-                            </div>
-                        ))}
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={categoryData}
+                                    cx="50%"
+                                    cy="40%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {categoryData.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1E1E1E', borderColor: '#333', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#E0E0E0' }}
+                                />
+                                <Legend verticalAlign="bottom" height={72} iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
@@ -120,24 +272,19 @@ const Dashboard = () => {
     );
 };
 
-const BentoCard = ({ title, value, icon: Icon, className, highlight, trend }: any) => (
-    <div className={clsx(
-        "p-6 rounded-xl border border-border flex flex-col justify-between transition-all duration-300 hover:shadow-lg hover:border-brand-500/20 group",
-        highlight ? "bg-brand-500/10 border-brand-500/20" : "bg-surface",
-        className
-    )}>
-        <div className="flex justify-between items-start">
-            <div className={clsx(
-                "p-2 rounded-lg transition-colors",
-                highlight ? "bg-brand-500/20 text-brand-500" : "bg-surfaceHighlight text-text-secondary group-hover:text-text-primary"
-            )}>
+const StatCard = ({ title, value, icon: Icon, trend, color, bg }: any) => (
+    <div className="bg-surface border border-border rounded-xl p-5 hover:border-brand-500/30 transition-all duration-300 group">
+        <div className="flex justify-between items-start mb-4">
+            <div className={clsx("p-2 rounded-lg", bg, color)}>
                 <Icon size={20} />
             </div>
-            {trend && <span className="text-xs font-medium text-green-500 bg-green-500/10 px-2 py-1 rounded-full">{trend}</span>}
+            <span className={clsx("text-xs font-medium px-2 py-1 rounded-full bg-surfaceHighlight text-text-secondary")}>
+                {trend}
+            </span>
         </div>
-        <div className="mt-4">
-            <div className="text-3xl font-bold text-text-primary tracking-tight">{value}</div>
-            <div className="text-sm text-text-secondary font-medium mt-1">{title}</div>
+        <div>
+            <div className="text-2xl font-bold text-text-primary">{value}</div>
+            <div className="text-xs text-text-secondary mt-1">{title}</div>
         </div>
     </div>
 );

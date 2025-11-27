@@ -1,14 +1,18 @@
 // import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Inbox as InboxIcon, Brain, Bot, LayoutDashboard, Settings } from 'lucide-react';
+import { Inbox as InboxIcon, Brain, Bot, LayoutDashboard, Settings, Terminal, Kanban as KanbanIcon, Bell, Calendar } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const Sidebar = () => {
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
         { icon: InboxIcon, label: 'Inbox', path: '/inbox' },
+        { icon: KanbanIcon, label: 'Kanban', path: '/kanban' },
+        { icon: Bell, label: 'Follow-Ups', path: '/followups' },
+        { icon: Calendar, label: 'Meetings', path: '/meetings' },
         { icon: Bot, label: 'Agent', path: '/agent' },
         { icon: Brain, label: 'Brain', path: '/prompts' },
+        { icon: Terminal, label: 'Playground', path: '/playground' },
     ];
 
     return (

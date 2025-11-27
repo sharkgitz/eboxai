@@ -22,6 +22,8 @@ try:
 except Exception as e:
     print(f"Env loading error: {e}")
 
+from backend.services.pii_service import pii_service
+
 class LLMService:
     def __init__(self):
         self.api_key = os.getenv("GEMINI_API_KEY")
@@ -34,11 +36,14 @@ class LLMService:
             print("Warning: GEMINI_API_KEY not found. Using Mock LLM.")
 
     def generate_text(self, prompt: str) -> str:
+        # Redact PII from prompt for safety
+        safe_prompt = pii_service.redact(prompt)
+        
         if self.is_mock:
-            return self._mock_response(prompt)
+            return self._mock_response(safe_prompt)
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self.model.generate_content(safe_prompt)
             return response.text
         except Exception as e:
             print(f"LLM Error: {e}")

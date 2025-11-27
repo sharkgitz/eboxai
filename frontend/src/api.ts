@@ -29,6 +29,14 @@ export interface Email {
     category: string;
     is_read: boolean;
     action_items?: ActionItem[];
+    // Phase 1: Sentiment Analysis
+    sentiment?: string;
+    emotion?: string;
+    urgency_score?: number;
+    // Phase 1: Dark Patterns
+    has_dark_patterns?: boolean;
+    dark_patterns?: string[];
+    dark_pattern_severity?: string;
 }
 
 export interface EmailDetail extends Email {
@@ -48,11 +56,15 @@ export const agentApi = {
     process: (id: string) => api.post(`/agent/process/${id}`),
     processAll: () => api.post('/agent/process-all'),
     chat: (query: string, emailId?: string) => api.post('/agent/chat', { query, email_id: emailId }),
-    draft: (emailId: string, instructions?: string) => api.post('/agent/draft', { email_id: emailId, instructions }),
+    draft: (emailId: string, instructions?: string, tone?: string, length?: string) => api.post('/agent/draft', { email_id: emailId, instructions, tone, length }),
 };
 
 export const promptsApi = {
     getAll: () => api.get('/prompts/'),
     create: (data: any) => api.post('/prompts/', data),
     update: (id: number, data: any) => api.put(`/prompts/${id}`, data),
+};
+
+export const playgroundApi = {
+    test: (emailId: string, template: string) => api.post('/playground/test', { email_id: emailId, template }),
 };

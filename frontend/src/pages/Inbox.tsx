@@ -13,6 +13,8 @@ const Inbox = () => {
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [draftTone, setDraftTone] = useState('professional');
+    const [draftLength, setDraftLength] = useState('concise');
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -177,10 +179,48 @@ const Inbox = () => {
                                         {email.subject}
                                     </div>
                                     <div className="text-xs text-text-tertiary line-clamp-1 mb-2">{email.body}</div>
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <span className={clsx("text-[10px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wider", getCategoryColor(email.category))}>
                                             {cleanText(email.category)}
                                         </span>
+
+                                        {/* Sentiment Badge */}
+                                        {email.emotion && email.emotion !== 'neutral' && (
+                                            <span className={clsx(
+                                                "text-[10px] px-1.5 py-0.5 rounded border font-medium",
+                                                email.emotion === 'happy' && "bg-green-500/10 border-green-500/30 text-green-400",
+                                                email.emotion === 'frustrated' && "bg-orange-500/10 border-orange-500/30 text-orange-400",
+                                                email.emotion === 'angry' && "bg-red-500/10 border-red-500/30 text-red-400",
+                                                email.emotion === 'worried' && "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                                            )}>
+                                                {email.emotion === 'happy' && '😊'}
+                                                {email.emotion === 'frustrated' && '😤'}
+                                                {email.emotion === 'angry' && '😠'}
+                                                {email.emotion === 'worried' && '😰'}
+                                                {email.emotion === 'excited' && '🎉'}
+                                                {' '}{email.emotion}
+                                            </span>
+                                        )}
+
+                                        {/* Urgency Indicator */}
+                                        {email.urgency_score && email.urgency_score >= 7 && (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded border bg-red-500/10 border-red-500/30 text-red-400 font-medium">
+                                                🔥 URGENT
+                                            </span>
+                                        )}
+
+                                        {/* Dark Pattern Warning */}
+                                        {email.has_dark_patterns && (
+                                            <span className={clsx(
+                                                "text-[10px] px-1.5 py-0.5 rounded border font-medium",
+                                                email.dark_pattern_severity === 'high' && "bg-red-500/10 border-red-500/30 text-red-400",
+                                                email.dark_pattern_severity === 'medium' && "bg-orange-500/10 border-orange-500/30 text-orange-400",
+                                                email.dark_pattern_severity === 'low' && "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                                            )}>
+                                                ⚠️ SUSPICIOUS
+                                            </span>
+                                        )}
+
                                         {email.action_items && email.action_items.length > 0 && (
                                             <div className="flex items-center gap-1 text-[10px] text-text-tertiary">
                                                 <CheckCircle size={10} />
@@ -325,8 +365,29 @@ const Inbox = () => {
                                         </div>
                                     ) : (
                                         <div className="text-center py-8">
+                                            <div className="flex gap-4 justify-center mb-4">
+                                                <select
+                                                    value={draftTone}
+                                                    onChange={(e) => setDraftTone(e.target.value)}
+                                                    className="bg-surfaceHighlight border border-border rounded-md px-2 py-1 text-sm text-text-primary focus:outline-none focus:border-brand-500"
+                                                >
+                                                    <option value="professional">Professional</option>
+                                                    <option value="casual">Casual</option>
+                                                    <option value="friendly">Friendly</option>
+                                                    <option value="urgent">Urgent</option>
+                                                </select>
+                                                <select
+                                                    value={draftLength}
+                                                    onChange={(e) => setDraftLength(e.target.value)}
+                                                    className="bg-surfaceHighlight border border-border rounded-md px-2 py-1 text-sm text-text-primary focus:outline-none focus:border-brand-500"
+                                                >
+                                                    <option value="concise">Concise</option>
+                                                    <option value="detailed">Detailed</option>
+                                                    <option value="bulleted">Bulleted</option>
+                                                </select>
+                                            </div>
                                             <button
-                                                onClick={() => agentApi.draft(selectedEmail.id).then(() => selectEmail(selectedEmail.id))}
+                                                onClick={() => agentApi.draft(selectedEmail.id, undefined, draftTone, draftLength).then(() => selectEmail(selectedEmail.id))}
                                                 className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40"
                                             >
                                                 Generate Draft Reply

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from typing import Optional
 from backend.database import get_db
 from backend.services import agent_service
 
@@ -11,11 +12,13 @@ router = APIRouter(
 
 class ChatRequest(BaseModel):
     query: str
-    email_id: str = None
+    email_id: Optional[str] = None
 
 class DraftRequest(BaseModel):
     email_id: str
     instructions: str = None
+    tone: str = "professional"
+    length: str = "concise"
 
 @router.post("/process/{email_id}")
 def process_email_endpoint(email_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -39,7 +42,7 @@ def chat(request: ChatRequest, db: Session = Depends(get_db)):
 
 @router.post("/draft")
 def create_draft(request: DraftRequest, db: Session = Depends(get_db)):
-    draft = agent_service.generate_draft(db, request.email_id, request.instructions)
+    draft = agent_service.generate_draft(db, request.email_id, request.instructions, request.tone, request.length)
     if not draft:
         raise HTTPException(status_code=400, detail="Could not generate draft")
     return draft
