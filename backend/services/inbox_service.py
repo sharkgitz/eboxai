@@ -37,45 +37,6 @@ def load_mock_data(db: Session):
                     email_data.setdefault("sentiment", "neutral")
                     email_data.setdefault("emotion", "neutral")
                     email_data.setdefault("urgency_score", 5)
-                    email_data.setdefault("has_dark_patterns", False)
-                    email_data.setdefault("dark_patterns", "[]")  # JSON string
-                    email_data.setdefault("dark_pattern_severity", "low")
-                    
-                    db_email = Email(**email_data)
-                    db.add(db_email)
-                    
-                    # Seed FollowUps and ActionItems for specific emails
-                    if "Q4 Report" in email_data["subject"]:
-                        db.add(FollowUp(
-                            email_id=email_data["id"],
-                            commitment="Send Q4 report",
-                            committed_by="me",
-                            due_date=(base_time + timedelta(days=1)).strftime("%Y-%m-%d"),
-                            status="pending"
-                        ))
-                        db.add(ActionItem(
-                            email_id=email_data["id"],
-                            description="Compile sales figures for Q4",
-                            deadline="Tomorrow",
-                            status="pending"
-                        ))
-                        
-                    if "Sprint Planning" in email_data["subject"]:
-                         db.add(FollowUp(
-                            email_id=email_data["id"],
-                            commitment="Attend Sprint Planning",
-                            committed_by="me",
-                            due_date=(base_time + timedelta(days=2)).strftime("%Y-%m-%d"),
-                            status="pending"
-                        ))
-
-            db.commit()
-
-    # Load Prompts
-    if db.query(Prompt).count() == 0:
-        if os.path.exists(DEFAULT_PROMPTS_PATH):
-            with open(DEFAULT_PROMPTS_PATH, "r") as f:
-                prompts_data = json.load(f)
                 for prompt_data in prompts_data:
                     db_prompt = Prompt(**prompt_data)
                     db.add(db_prompt)
