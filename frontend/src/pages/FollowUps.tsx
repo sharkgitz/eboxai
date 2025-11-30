@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { followupsApi } from '../api';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -22,9 +23,8 @@ const FollowUps = () => {
 
     const fetchFollowUps = async () => {
         try {
-            const res = await fetch('http://localhost:8000/followups/');
-            const data = await res.json();
-            setFollowUps(data);
+            const res = await followupsApi.getAll();
+            setFollowUps(res.data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -35,11 +35,7 @@ const FollowUps = () => {
     const toggleStatus = async (id: number, currentStatus: string) => {
         const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
         try {
-            await fetch(`http://localhost:8000/followups/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            });
+            await followupsApi.updateStatus(id, newStatus);
             fetchFollowUps();
         } catch (err) {
             console.error(err);

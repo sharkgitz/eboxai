@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { meetingsApi } from '../api';
 import { Calendar, Clock, FileText, Users, Sparkles, Brain } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -31,10 +32,9 @@ const MeetingPrep = () => {
 
     const fetchMeetings = async () => {
         try {
-            const res = await fetch('http://localhost:8000/meetings/');
-            const data = await res.json();
-            setMeetings(data);
-            if (data.length > 0) {
+            const res = await meetingsApi.getAll();
+            setMeetings(res.data);
+            if (res.data.length > 0) {
                 // Don't auto-select, let user choose
             }
         } catch (err) {
@@ -50,11 +50,8 @@ const MeetingPrep = () => {
         setGenerating(true);
 
         try {
-            const res = await fetch(`http://localhost:8000/meetings/${meeting.id}/brief`, {
-                method: 'POST'
-            });
-            const data = await res.json();
-            setBrief(data);
+            const res = await meetingsApi.generateBrief(meeting.id);
+            setBrief(res.data);
         } catch (err) {
             console.error(err);
         } finally {

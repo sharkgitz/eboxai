@@ -68,3 +68,13 @@ export const promptsApi = {
 export const playgroundApi = {
     test: (emailId: string, template: string) => api.post('/playground/test', { email_id: emailId, template }),
 };
+
+export const meetingsApi = {
+    getAll: () => api.get('/meetings/'),
+    generateBrief: (id: string) => api.post(`/meetings/${id}/brief`),
+};
+
+export const followupsApi = {
+    getAll: () => api.get('/followups/'),
+    updateStatus: (id: number, status: string) => api.patch(`/followups/${id}`, { status }),
+};
