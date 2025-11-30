@@ -113,8 +113,13 @@ def chat_agent(db: Session, query: str, email_id: str = None):
         
         relevant_emails = rag_service.search(query)
         
+        # Fallback: If RAG returns nothing (or query is generic "summarize"), fetch recent emails
+        if not relevant_emails or "summarize" in query.lower():
+            # Get recent emails if RAG failed or for summary queries
+            relevant_emails = db.query(Email).order_by(Email.timestamp.desc()).limit(10).all()
+        
         if relevant_emails:
-            context = "Here are the most relevant emails found in the inbox:\n\n"
+            context = "Here are the most relevant/recent emails found in the inbox:\n\n"
             for e in relevant_emails:
                 context += f"ID: {e.id}\nSender: {e.sender}\nSubject: {e.subject}\nDate: {e.timestamp}\nBody: {e.body[:300]}...\nCategory: {e.category}\n\n"
             context += "End of relevant emails.\n\n"

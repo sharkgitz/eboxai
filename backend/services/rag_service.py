@@ -53,9 +53,25 @@ class RAGService:
         if self.is_mock:
             # Simple keyword match fallback
             results = []
+            tokens = query.lower().split()
+            # Filter out common stop words roughly by length
+            keywords = [t for t in tokens if len(t) > 3]
+            
             for email in self.emails.values():
-                if query.lower() in email.subject.lower() or query.lower() in email.body.lower():
+                # If no specific keywords (e.g. "summarize emails"), match everything
+                if not keywords:
                     results.append(email)
+                    continue
+                    
+                # Check if any keyword matches
+                if any(k in email.subject.lower() or k in email.body.lower() for k in keywords):
+                    results.append(email)
+            
+            # Fallback: If no matches found (e.g. "summarize my emails" might not match content),
+            # return recent emails so the agent has context.
+            if not results:
+                results = list(self.emails.values())
+                
             return results[:k]
 
         try:
