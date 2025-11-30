@@ -1,4 +1,5 @@
 // import React from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Inbox as InboxIcon, Brain, Bot, LayoutDashboard, Settings, Terminal, Kanban as KanbanIcon, Bell, Calendar } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -14,6 +15,21 @@ const Sidebar = () => {
         { icon: Brain, label: 'Brain', path: '/prompts' },
         { icon: Terminal, label: 'Playground', path: '/playground' },
     ];
+
+    const [status, setStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+    useEffect(() => {
+        const checkConnection = async () => {
+            try {
+                await fetch(apiUrl);
+                setStatus('connected');
+            } catch (e) {
+                setStatus('error');
+            }
+        };
+        checkConnection();
+    }, []);
 
     return (
         <div className="w-[240px] h-screen bg-background text-text-secondary flex flex-col border-r border-border">
@@ -46,8 +62,22 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            <div className="p-2 border-t border-border mt-auto">
-                <div className="px-3 py-1.5 text-xs text-text-tertiary">v1.1</div>
+            <div className="p-2 border-t border-border mt-auto space-y-2">
+                <div className="px-3 py-1.5 bg-surfaceHighlight rounded-md">
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className={clsx("w-2 h-2 rounded-full",
+                            status === 'connected' ? "bg-green-500" :
+                                status === 'error' ? "bg-red-500" : "bg-yellow-500"
+                        )} />
+                        <span className="text-xs font-medium text-text-primary">
+                            {status === 'connected' ? 'Online' : status === 'error' ? 'Offline' : 'Connecting...'}
+                        </span>
+                    </div>
+                    <div className="text-[10px] text-text-tertiary truncate" title={apiUrl}>
+                        {apiUrl}
+                    </div>
+                </div>
+                <div className="px-3 text-[10px] text-text-tertiary">v1.2</div>
                 <NavLink
                     to="/settings"
                     className={({ isActive }) =>
