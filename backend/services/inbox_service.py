@@ -10,9 +10,12 @@ MOCK_INBOX_PATH = os.path.join(DATA_DIR, "mock_inbox.json")
 DEFAULT_PROMPTS_PATH = os.path.join(DATA_DIR, "default_prompts.json")
 
 def load_mock_data(db: Session):
+    print(f"Attempting to load mock data from: {MOCK_INBOX_PATH}")
+    
     # Load Emails
     if db.query(Email).count() == 0:
         if os.path.exists(MOCK_INBOX_PATH):
+            print("Mock inbox file found. Loading...")
             with open(MOCK_INBOX_PATH, "r") as f:
                 emails_data = json.load(f)
                 
@@ -44,6 +47,12 @@ def load_mock_data(db: Session):
                     db_email = Email(**email_data)
                     db.add(db_email)
             db.commit()
+            print("Emails loaded successfully.")
+        else:
+            print(f"ERROR: Mock inbox file NOT found at {MOCK_INBOX_PATH}")
+            raise FileNotFoundError(f"Mock inbox file not found at {MOCK_INBOX_PATH}")
+    else:
+        print("Emails already exist in DB. Skipping email load.")
 
     # Seed FollowUps and ActionItems if missing (even if emails exist)
     if db.query(FollowUp).count() == 0:

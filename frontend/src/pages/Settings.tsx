@@ -64,8 +64,10 @@ const Settings = () => {
                                 try {
                                     await inboxApi.load();
                                     alert('Data reset successfully! Please refresh.');
-                                } catch (e) {
-                                    alert('Failed to reset data.');
+                                } catch (e: any) {
+                                    console.error(e);
+                                    const msg = e.response?.data?.detail || e.message || 'Unknown error';
+                                    alert(`Failed to reset data: ${msg}`);
                                 }
                             }}
                             className="px-4 py-2 text-sm font-medium text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
