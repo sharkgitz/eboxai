@@ -1,9 +1,9 @@
 import json
 import os
 from sqlalchemy.orm import Session
-from backend.models import Email, Prompt
+from backend.models import Email, Prompt, FollowUp, ActionItem
 from backend.schemas import EmailCreate
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 MOCK_INBOX_PATH = os.path.join(DATA_DIR, "mock_inbox.json")
