@@ -124,5 +124,5 @@ def chat_agent(db: Session, query: str, email_id: str = None):
                 context += f"ID: {e.id}\nSender: {e.sender}\nSubject: {e.subject}\nDate: {e.timestamp}\nBody: {e.body[:300]}...\nCategory: {e.category}\n\n"
             context += "End of relevant emails.\n\n"
 
-    prompt = f"You are a helpful Email Productivity Agent. You have access to the user's emails provided in the context below.\n\nIMPORTANT: Do not use excessive asterisks (*) for formatting. Use clean, professional formatting with headers and simple lists.\n\n{context}User Query: {query}\n\nAgent Response:"
+    prompt = f"You are a helpful Email Productivity Agent. You have access to the user's emails provided in the context below.\n\nIMPORTANT: Format your response using Markdown. Use headers (##) for sections, bullet points (-) for lists, and bolding (**) for emphasis. Do not output a single block of text.\n\n{context}User Query: {query}\n\nAgent Response:"
     return llm_service.generate_text(prompt)
