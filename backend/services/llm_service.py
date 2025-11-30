@@ -63,6 +63,12 @@ class LLMService:
         if "Draft a" in prompt:
             return "Dear Sender,\n\nThank you for your email. I have received it and will get back to you shortly.\n\nBest,\nAgent"
         
+        if "Analyze this email and extract any commitments" in prompt:
+            return '''[
+                {"commitment": "Send Q4 report", "committed_by": "me", "due_date": "Friday"},
+                {"commitment": "Review proposal", "committed_by": "sender", "due_date": null}
+            ]'''
+
         return "I am a mock agent. Please provide a GEMINI_API_KEY for real intelligence."
 
 llm_service = LLMService()

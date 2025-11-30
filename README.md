@@ -132,6 +132,26 @@ eboxai/
 
 ---
 
+## ☁️ Deployment Troubleshooting
+
+### 1. Agent says "I am a mock agent"
+This happens if the `GEMINI_API_KEY` is missing.
+- **Vercel/Render**: Go to your project settings -> Environment Variables.
+- Add `GEMINI_API_KEY` with your Google Gemini API key.
+- Redeploy if necessary.
+
+### 2. "Meetings" or "Follow-ups" tabs are empty
+On platforms like Vercel/Render, the database starts empty. You need to seed it with demo data.
+1. Deploy your backend.
+2. Run the following command (replace with your backend URL):
+   ```bash
+   curl -X POST https://your-backend-url.onrender.com/seed
+   ```
+   Or simply visit `https://your-backend-url.onrender.com/docs`, find the `/seed` endpoint, and click "Try it out" -> "Execute".
+3. Refresh your frontend. You should now see sample meetings and follow-ups.
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] **Core Agent Engine**: Categorization, Extraction, Drafting.
