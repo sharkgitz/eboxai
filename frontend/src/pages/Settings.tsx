@@ -1,4 +1,5 @@
 import { Settings as SettingsIcon, Moon, Bell, Shield, User } from 'lucide-react';
+import { inboxApi } from '../api';
 import { clsx } from 'clsx';
 
 const Settings = () => {
@@ -52,6 +53,25 @@ const Settings = () => {
                                 Sign Out
                             </button>
                         </div>
+                    </div>
+                    <div className="p-4 bg-surface rounded-lg border border-border flex justify-between items-center">
+                        <div>
+                            <div className="font-medium">Demo Data</div>
+                            <div className="text-sm text-text-secondary">Reset inbox to initial state</div>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await inboxApi.load();
+                                    alert('Data reset successfully! Please refresh.');
+                                } catch (e) {
+                                    alert('Failed to reset data.');
+                                }
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
+                        >
+                            Reset Data
+                        </button>
                     </div>
                 </Section>
             </div>
