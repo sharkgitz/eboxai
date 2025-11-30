@@ -24,6 +24,7 @@ const FollowUps = () => {
     const fetchFollowUps = async () => {
         try {
             const res = await followupsApi.getAll();
+            console.log("FollowUps Data:", res.data);
             setFollowUps(res.data);
         } catch (err) {
             console.error(err);

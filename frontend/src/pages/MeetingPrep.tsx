@@ -33,6 +33,7 @@ const MeetingPrep = () => {
     const fetchMeetings = async () => {
         try {
             const res = await meetingsApi.getAll();
+            console.log("Meetings Data:", res.data);
             setMeetings(res.data);
             if (res.data.length > 0) {
                 // Don't auto-select, let user choose

@@ -47,6 +47,7 @@ const Sidebar = () => {
             </nav>
 
             <div className="p-2 border-t border-border mt-auto">
+                <div className="px-3 py-1.5 text-xs text-text-tertiary">v1.1</div>
                 <NavLink
                     to="/settings"
                     className={({ isActive }) =>
