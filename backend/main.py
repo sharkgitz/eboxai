@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from backend.database import engine, Base, get_db
+from backend.database import engine, Base, get_db, SessionLocal
 from backend import models  # Explicit import to ensure models are registered
 from backend.routers import inbox, prompts, agent, action_items, playground, followups, meetings
 
@@ -31,6 +31,21 @@ from backend.services import inbox_service
 @app.get("/")
 async def root():
     return {"message": "Email Agent API is running"}
+
+@app.on_event("startup")
+def startup_event():
+    """
+    Auto-seed database on startup.
+    Crucial for ephemeral environments (Vercel/Render) where DB might be wiped.
+    """
+    db = SessionLocal()
+    try:
+        inbox_service.load_mock_data(db)
+        print("Database auto-seeded on startup.")
+    except Exception as e:
+        print(f"Auto-seed failed: {e}")
+    finally:
+        db.close()
 
 @app.post("/seed")
 def seed_db(db: Session = Depends(get_db)):
