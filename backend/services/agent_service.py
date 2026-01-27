@@ -96,9 +96,13 @@ Respond ONLY with the valid JSON object."""
 
     except Exception as e:
         print(f"Comprehensive analysis failed: {e}")
-        # Fallback values if analysis fails completely
-        email.category = "Uncategorized"
+        # DEBUG: Expose error in UI to see what's wrong
+        email.category = f"Error: {str(e)[:20]}" # Show first 20 chars of error
         email.sentiment = "neutral"
+
+    # DEBUG: Valid fallback if model ignored instructions
+    if email.category == "Uncategorized":
+         email.category = "Model: Uncategorized"
 
     db.commit()
     return email
