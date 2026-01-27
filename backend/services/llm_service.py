@@ -29,7 +29,7 @@ class LLMService:
         self.api_key = os.getenv("GEMINI_API_KEY")
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-1.5-flash-001')
             self.is_mock = False
         else:
             self.is_mock = True
@@ -47,7 +47,23 @@ class LLMService:
             return response.text
         except Exception as e:
             print(f"LLM Error: {e}")
-            return f"I am a mock agent. (Real Intelligence Failed: {str(e)})"
+            debug_info = f"Error: {str(e)}"
+            
+            # Diagnostic: Check library version
+            try:
+                import google.generativeai as genai_lib
+                debug_info += f" | Lib: {genai_lib.__version__}"
+            except:
+                pass
+
+            # Diagnostic: List available models
+            try:
+                models = [m.name for m in genai.list_models()]
+                debug_info += f" | Available Models: {', '.join(models)[:200]}..." # Truncate
+            except Exception as list_err:
+                debug_info += f" | ListModels Failed: {str(list_err)}"
+
+            return f"I am a mock agent. (Real Intelligence Failed: {debug_info})"
 
     def _mock_response(self, prompt: str) -> str:
         # Simple heuristic mock responses for demo
