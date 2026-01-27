@@ -1,4 +1,5 @@
 import os
+import json
 import google.generativeai as genai
 from dotenv import load_dotenv
 from pathlib import Path
@@ -82,18 +83,45 @@ class LLMService:
 
     def _mock_response(self, prompt: str) -> str:
         # Simple heuristic mock responses for demo
-        # Simple heuristic mock responses for demo
+
         if "Analyze this email" in prompt or "Categorize" in prompt:
             # Return valid JSON for the comprehensive analysis prompt
-            return '''{
-                "category": "Work: Routine",
-                "category_reasoning": "Mock analysis: Content appears to be a standard work email.",
-                "sentiment": "neutral",
-                "emotion": "neutral",
-                "urgency_score": 3,
+            category = "Work: Routine"
+            reasoning = "Mock analysis: Content appears to be a standard work email."
+            urgency = 3
+            sentiment = "neutral"
+            
+            p_lower = prompt.lower()
+            
+            if "urgent" in p_lower or "asap" in p_lower or "deadline" in p_lower:
+                category = "Work: Important"
+                reasoning = "Mock analysis: Detected urgency keywords."
+                urgency = 9
+                sentiment = "tense"
+            elif "newsletter" in p_lower or "digest" in p_lower or "weekly" in p_lower:
+                category = "Newsletter"
+                reasoning = "Mock analysis: Appears to be a periodical."
+            elif "invoice" in p_lower or "receipt" in p_lower or "payment" in p_lower:
+                category = "Finance"
+                reasoning = "Mock analysis: Transactional keywords detected."
+            elif "flight" in p_lower or "hotel" in p_lower or "booking" in p_lower:
+                category = "Travel"
+                reasoning = "Mock analysis: Travel confirmation detected."
+                sentiment = "happy"
+            elif "verify" in p_lower or "lottery" in p_lower or "winner" in p_lower:
+                category = "Spam"
+                reasoning = "Mock analysis: Suspicious keywords."
+                sentiment = "negative"
+
+            return json.dumps({
+                "category": category,
+                "category_reasoning": reasoning,
+                "sentiment": sentiment,
+                "emotion": sentiment,
+                "urgency_score": urgency,
                 "action_items": [],
                 "followups": []
-            }'''
+            })
         
         if "Extract action items" in prompt:
             return '[{"description": "Review report", "deadline": "tomorrow"}]'
