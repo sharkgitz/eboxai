@@ -11,7 +11,7 @@ class Email(Base):
     subject = Column(String, index=True)
     body = Column(Text)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    category = Column(String, default="Uncategorized")
+    category = Column(String, default="Pending Analysis")
     is_read = Column(Boolean, default=False)
     
     # Sentiment Analysis

@@ -27,10 +27,7 @@ Body: {email.body}
 
 Return a single JSON object with the following structure:
 {{
-    "sentiment": "positive" | "negative" | "neutral" | "urgent",
-    "emotion": "happy" | "frustrated" | "angry" | "neutral" | "excited",
-    "urgency_score": 0-10,
-    "category": "Work: Important" | "Work: Routine" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel" | "Social" | "Promotions",
+    "category": "Work: Important" | "Work: Routine" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel" | "Social" | "Promotions" | "General",
     "category_reasoning": "Short explanation of why this category was chosen",
     "action_items": [
         {{ "description": "task description", "deadline": "date or null" }}
@@ -49,8 +46,9 @@ Classification Guidelines:
 - "Spam": Unsolicited offers, phishing attempts, lottery wins.
 - "Social": LinkedIn notifications, Facebook/Twitter updates.
 - "Promotions": Sales, discounts, limited time offers.
+- "General": Use this if NO other category fits.
 
-IMPORTANT: Do NOT use "Uncategorized". Always choose the best fit.
+IMPORTANT: You MUST choose one of the above. Do NOT use "Uncategorized".
 
 Respond ONLY with the valid JSON object."""
 
