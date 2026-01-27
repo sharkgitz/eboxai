@@ -65,6 +65,13 @@ Respond ONLY with the valid JSON object."""
     try:
         response = llm_service.generate_text(prompt_text, json_mode=True)
         
+        # DEBUG: Log response to file
+        try:
+            with open("debug_response.log", "a", encoding="utf-8") as f:
+                f.write(f"\n--- RESPONSE ---\n{response}\n----------------\n")
+        except:
+            pass
+        
         # Try direct JSON parse first (JSON mode should be clean)
         data = {}
         try:

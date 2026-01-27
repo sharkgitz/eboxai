@@ -39,6 +39,13 @@ class LLMService:
         # Redact PII from prompt for safety
         safe_prompt = pii_service.redact(prompt)
         
+        # DEBUG: Log prompt to file
+        try:
+            with open("debug_prompt.log", "a", encoding="utf-8") as f:
+                f.write(f"\n--- PROMPT ---\n{safe_prompt}\n----------------\n")
+        except:
+            pass
+        
         if self.is_mock:
             return self._mock_response(safe_prompt)
         
@@ -70,7 +77,10 @@ class LLMService:
             except Exception as list_err:
                 debug_info += f" | ListModels Failed: {str(list_err)}"
 
-            return f"I am a mock agent. (Real Intelligence Failed: {debug_info})"
+            debug_info += f" | ListModels Failed: {str(list_err)}"
+
+            print(f"LLM Failed. Falling back to mock. Debug: {debug_info}")
+            return self._mock_response(safe_prompt)
 
     def _mock_response(self, prompt: str) -> str:
         # Simple heuristic mock responses for demo
