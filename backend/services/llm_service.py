@@ -77,8 +77,6 @@ class LLMService:
             except Exception as list_err:
                 debug_info += f" | ListModels Failed: {str(list_err)}"
 
-            debug_info += f" | ListModels Failed: {str(list_err)}"
-
             print(f"LLM Failed. Falling back to mock. Debug: {debug_info}")
             return self._mock_response(safe_prompt)
 
