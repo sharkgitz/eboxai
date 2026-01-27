@@ -29,7 +29,7 @@ class LLMService:
         self.api_key = os.getenv("GEMINI_API_KEY")
         if self.api_key:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash-001')
+            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
             self.is_mock = False
         else:
             self.is_mock = True
