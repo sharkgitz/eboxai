@@ -30,7 +30,8 @@ Return a single JSON object with the following structure:
     "sentiment": "positive" | "negative" | "neutral" | "urgent",
     "emotion": "happy" | "frustrated" | "angry" | "neutral" | "excited",
     "urgency_score": 0-10,
-    "category": "Work" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel",
+    "category": "Work: Important" | "Work: Routine" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel" | "Social" | "Promotions",
+    "category_reasoning": "Short explanation of why this category was chosen",
     "action_items": [
         {{ "description": "task description", "deadline": "date or null" }}
     ],
@@ -38,6 +39,18 @@ Return a single JSON object with the following structure:
         {{ "commitment": "what was promised", "committed_by": "me" or sender_email, "due_date": "date or null" }}
     ]
 }}
+
+Classification Guidelines:
+- "Work: Important": Direct requests from boss/colleagues, project updates, meeting invites.
+- "Work: Routine": Automated system notifications, generic HR announcements, low priority.
+- "Finance": Bills, receipts, bank notifications, salary.
+- "Travel": Flight confirmations, hotel bookings, ride share receipts.
+- "Newsletter": News digests, substack, marketing emails from known brands.
+- "Spam": Unsolicited offers, phishing attempts, lottery wins.
+- "Social": LinkedIn notifications, Facebook/Twitter updates.
+- "Promotions": Sales, discounts, limited time offers.
+
+IMPORTANT: Do NOT use "Uncategorized". Always choose the best fit.
 
 Respond ONLY with the valid JSON object."""
 
