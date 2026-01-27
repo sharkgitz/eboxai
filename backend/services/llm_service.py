@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import google.generativeai as genai
 from dotenv import load_dotenv
 from pathlib import Path
@@ -86,32 +87,50 @@ class LLMService:
 
         if "Analyze this email" in prompt or "Categorize" in prompt:
             # Return valid JSON for the comprehensive analysis prompt
+            # Extract content to avoid matching instructions in the prompt
+            import re
+            subject_match = re.search(r"Subject: (.*)", prompt)
+            # Body ends where the instructions begin ("Return a single JSON")
+            body_match = re.search(r"Body: (.*?)(\nReturn a single JSON|\n\nReturn)", prompt, re.DOTALL)
+            
+            subject_text = subject_match.group(1) if subject_match else ""
+            body_text = body_match.group(1) if body_match else ""
+            
+            # Combine relevant text for analysis
+            content_lower = (subject_text + " " + body_text).lower()
+            
+            # Default
             category = "Work: Routine"
-            reasoning = "Mock analysis: Content appears to be a standard work email."
+            reasoning = "Mock analysis: Defaulting to routine work based on content patterns."
             urgency = 3
             sentiment = "neutral"
-            
-            p_lower = prompt.lower()
-            
-            if "urgent" in p_lower or "asap" in p_lower:
+
+            if "urgent" in content_lower or "asap" in content_lower or "due" in content_lower:
                 category = "Work: Important"
                 reasoning = "Mock analysis: Detected urgency keywords."
                 urgency = 9
                 sentiment = "tense"
-            elif "newsletter" in p_lower or "digest" in p_lower or "weekly" in p_lower:
+            elif "newsletter" in content_lower or "digest" in content_lower or "weekly" in content_lower:
                 category = "Newsletter"
                 reasoning = "Mock analysis: Appears to be a periodical."
-            elif "invoice" in p_lower or "receipt" in p_lower or "payment" in p_lower:
+            elif "invoice" in content_lower or "receipt" in content_lower or "payment" in content_lower or "billing" in content_lower:
                 category = "Finance"
                 reasoning = "Mock analysis: Transactional keywords detected."
-            elif "flight" in p_lower or "hotel" in p_lower or "booking" in p_lower:
+            elif "flight" in content_lower or "hotel" in content_lower or "booking" in content_lower:
                 category = "Travel"
                 reasoning = "Mock analysis: Travel confirmation detected."
                 sentiment = "happy"
-            elif "verify" in p_lower or "lottery" in p_lower or "winner" in p_lower:
+            elif "lottery" in content_lower or "winner" in content_lower or "prize" in content_lower:
                 category = "Spam"
                 reasoning = "Mock analysis: Suspicious keywords."
                 sentiment = "negative"
+            elif "dinner" in content_lower or "mom" in content_lower or "honey" in content_lower or "weekend" in content_lower:
+                category = "Personal"
+                reasoning = "Mock analysis: Personal context detected."
+                sentiment = "happy"
+            elif "github" in content_lower or "pr" in content_lower or "review" in content_lower or "sprint" in content_lower or "meeting" in content_lower:
+                category = "Work: Routine" # Specific routine work
+                reasoning = "Mock analysis: Work related terms detected."
 
             return json.dumps({
                 "category": category,
