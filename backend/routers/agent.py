@@ -3,7 +3,20 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from backend.database import get_db
+from backend.database import get_db, SessionLocal
 from backend.services import agent_service
+
+def run_process_email_background(email_id: str):
+    """
+    Wrapper to run process_email in a background task with its own DB session.
+    FastAPI's Depends(get_db) session is closed after the request finishes,
+    so we must create a new session for background tasks.
+    """
+    db = SessionLocal()
+    try:
+        agent_service.process_email(db, email_id)
+    finally:
+        db.close()
 
 router = APIRouter(
     prefix="/agent",
@@ -23,7 +36,7 @@ class DraftRequest(BaseModel):
 @router.post("/process/{email_id}")
 def process_email_endpoint(email_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Run in background to not block UI
-    background_tasks.add_task(agent_service.process_email, db, email_id)
+    background_tasks.add_task(run_process_email_background, email_id)
     return {"message": "Processing started"}
 
 @router.post("/process-all")
@@ -32,7 +45,7 @@ def process_all_emails(background_tasks: BackgroundTasks, db: Session = Depends(
     from backend.models import Email
     emails = db.query(Email).limit(20).all()
     for email in emails:
-        background_tasks.add_task(agent_service.process_email, db, email.id)
+        background_tasks.add_task(run_process_email_background, email.id)
     return {"message": "Batch processing started"}
 
 @router.post("/chat")

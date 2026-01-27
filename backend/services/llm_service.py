@@ -74,11 +74,18 @@ class LLMService:
 
     def _mock_response(self, prompt: str) -> str:
         # Simple heuristic mock responses for demo
-        if "Categorize" in prompt:
-            if "Urgent" in prompt or "Report" in prompt: return "Important"
-            if "Newsletter" in prompt: return "Newsletter"
-            if "won a cruise" in prompt: return "Spam"
-            return "Uncategorized"
+        # Simple heuristic mock responses for demo
+        if "Analyze this email" in prompt or "Categorize" in prompt:
+            # Return valid JSON for the comprehensive analysis prompt
+            return '''{
+                "category": "Work: Routine",
+                "category_reasoning": "Mock analysis: Content appears to be a standard work email.",
+                "sentiment": "neutral",
+                "emotion": "neutral",
+                "urgency_score": 3,
+                "action_items": [],
+                "followups": []
+            }'''
         
         if "Extract action items" in prompt:
             return '[{"description": "Review report", "deadline": "tomorrow"}]'

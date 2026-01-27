@@ -9,7 +9,17 @@ from backend.services.followup_service import extract_followups
 def process_email(db: Session, email_id: str):
     email = db.query(Email).filter(Email.id == email_id).first()
     if not email:
+        print(f"ProcessEmail: Email {email_id} not found")
         return None
+
+    # TRACE: Set status immediately to prove task is running
+    print(f"ProcessEmail: Starting analysis for {email_id}")
+    email.category = "Analyzing..."
+    try:
+        db.commit()
+    except Exception as e:
+        print(f"ProcessEmail: Failed to commit initial status: {e}")
+        db.rollback()
 
     # 1. Dark Patterns Detection (Regex-based, free, keep separate)
     dark_patterns_result = detect_dark_patterns(email.subject, email.body)
@@ -58,7 +68,6 @@ Respond ONLY with the valid JSON object."""
         # Try direct JSON parse first (JSON mode should be clean)
         data = {}
         try:
-            import json
             data = json.loads(response)
         except:
             # Fallback to regex if model added text around it
