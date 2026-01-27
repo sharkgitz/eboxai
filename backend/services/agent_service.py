@@ -66,10 +66,16 @@ Respond ONLY with the valid JSON object."""
                 pass
         
         # Populate Email Fields
+        # Populate Email Fields
         email.sentiment = data.get("sentiment", "neutral")
         email.emotion = data.get("emotion", "neutral")
         email.urgency_score = data.get("urgency_score", 5)
-        email.category = data.get("category", "Uncategorized")
+        # Default to "General" if model returns nothing or invalid key
+        email.category = data.get("category", "General")
+        
+        # Determine if model returned "Uncategorized" explicitly
+        if email.category == "Uncategorized":
+            email.category = "General"
         
         # Populate Actions
         actions = data.get("action_items", [])
@@ -94,13 +100,8 @@ Respond ONLY with the valid JSON object."""
 
     except Exception as e:
         print(f"Comprehensive analysis failed: {e}")
-        # DEBUG: Expose error in UI to see what's wrong
-        email.category = f"Error: {str(e)[:20]}" # Show first 20 chars of error
+        email.category = "General"
         email.sentiment = "neutral"
-
-    # DEBUG: Valid fallback if model ignored instructions
-    if email.category == "Uncategorized":
-         email.category = "Model: Uncategorized"
 
     db.commit()
     return email
