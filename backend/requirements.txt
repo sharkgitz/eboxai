@@ -2,7 +2,7 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
-google-generativeai
+google-generativeai>=0.7.0
 python-dotenv
 python-multipart
 numpy
