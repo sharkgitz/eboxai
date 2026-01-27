@@ -93,7 +93,7 @@ class LLMService:
             
             p_lower = prompt.lower()
             
-            if "urgent" in p_lower or "asap" in p_lower or "deadline" in p_lower:
+            if "urgent" in p_lower or "asap" in p_lower:
                 category = "Work: Important"
                 reasoning = "Mock analysis: Detected urgency keywords."
                 urgency = 9
