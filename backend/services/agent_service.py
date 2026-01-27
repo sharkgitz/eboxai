@@ -55,27 +55,31 @@ Respond ONLY with the valid JSON object."""
     try:
         response = llm_service.generate_text(prompt_text, json_mode=True)
         
-        # Parse JSON
-        import re
-        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        # Try direct JSON parse first (JSON mode should be clean)
         data = {}
-        if json_match:
-            try:
-                data = json.loads(json_match.group())
-            except:
-                pass
+        try:
+            import json
+            data = json.loads(response)
+        except:
+            # Fallback to regex if model added text around it
+            import re
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                try:
+                    data = json.loads(json_match.group())
+                except:
+                    pass
+
+        if not data:
+            raise Exception("Empty/Invalid JSON")
         
-        # Populate Email Fields
         # Populate Email Fields
         email.sentiment = data.get("sentiment", "neutral")
         email.emotion = data.get("emotion", "neutral")
         email.urgency_score = data.get("urgency_score", 5)
-        # Default to "General" if model returns nothing or invalid key
-        email.category = data.get("category", "General")
         
-        # Determine if model returned "Uncategorized" explicitly
-        if email.category == "Uncategorized":
-            email.category = "General"
+        # Default to "Err: Key" checking so we know if model missed the key
+        email.category = data.get("category", "Err: Missing Key")
         
         # Populate Actions
         actions = data.get("action_items", [])
@@ -100,7 +104,8 @@ Respond ONLY with the valid JSON object."""
 
     except Exception as e:
         print(f"Comprehensive analysis failed: {e}")
-        email.category = "General"
+        # DEBUG: Write error to category field
+        email.category = f"Err: {str(e)[:20]}" 
         email.sentiment = "neutral"
 
     db.commit()
