@@ -47,7 +47,7 @@ class LLMService:
             return response.text
         except Exception as e:
             print(f"LLM Error: {e}")
-            return self._mock_response(prompt)
+            return f"I am a mock agent. (Real Intelligence Failed: {str(e)})"
 
     def _mock_response(self, prompt: str) -> str:
         # Simple heuristic mock responses for demo
@@ -69,6 +69,6 @@ class LLMService:
                 {"commitment": "Review proposal", "committed_by": "sender", "due_date": null}
             ]'''
 
-        return "I am a mock agent. Please provide a GEMINI_API_KEY for real intelligence."
+        return "I am a mock agent. (Reason: GEMINI_API_KEY environment variable is missing)"
 
 llm_service = LLMService()
