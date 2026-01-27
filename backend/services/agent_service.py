@@ -11,59 +11,81 @@ def process_email(db: Session, email_id: str):
     if not email:
         return None
 
-    # 1. Sentiment Analysis
-    sentiment_result = analyze_sentiment(email.subject, email.body)
-    email.sentiment = sentiment_result.get("sentiment", "neutral")
-    email.emotion = sentiment_result.get("emotion", "neutral")
-    email.urgency_score = sentiment_result.get("urgency_score", 5)
-
-    # 2. Dark Patterns Detection
+    # 1. Dark Patterns Detection (Regex-based, free, keep separate)
     dark_patterns_result = detect_dark_patterns(email.subject, email.body)
     email.has_dark_patterns = dark_patterns_result.get("has_dark_patterns", False)
-    email.dark_patterns = json.dumps(dark_patterns_result.get("patterns_found", []))  # Store as JSON string
+    email.dark_patterns = json.dumps(dark_patterns_result.get("patterns_found", []))
     email.dark_pattern_severity = dark_patterns_result.get("severity", "low")
 
-    # 3. Categorization
-    cat_prompt = db.query(Prompt).filter(Prompt.prompt_type == "categorization").first()
-    if cat_prompt:
-        prompt_text = cat_prompt.template.replace("{subject}", email.subject).replace("{body}", email.body)
-        category = llm_service.generate_text(prompt_text).strip()
-        # Simple cleanup if LLM is chatty
-        if ":" in category: category = category.split(":")[-1].strip()
-        email.category = category
+    # 2. Comprehensive LLM Analysis (Consolidating 4 calls into 1)
+    # Combined prompt for Sentiment, Category, Actions, and Followups
+    prompt_text = f"""Analyze this email and provide a comprehensive JSON response.
 
-    # 4. Action Extraction
-    ext_prompt = db.query(Prompt).filter(Prompt.prompt_type == "extraction").first()
-    if ext_prompt:
-        prompt_text = ext_prompt.template.replace("{body}", email.body)
+Subject: {email.subject}
+From: {email.sender}
+Body: {email.body}
+
+Return a single JSON object with the following structure:
+{{
+    "sentiment": "positive" | "negative" | "neutral" | "urgent",
+    "emotion": "happy" | "frustrated" | "angry" | "neutral" | "excited",
+    "urgency_score": 0-10,
+    "category": "Work" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel",
+    "action_items": [
+        {{ "description": "task description", "deadline": "date or null" }}
+    ],
+    "followups": [
+        {{ "commitment": "what was promised", "committed_by": "me" or sender_email, "due_date": "date or null" }}
+    ]
+}}
+
+Respond ONLY with the valid JSON object."""
+
+    try:
         response = llm_service.generate_text(prompt_text)
-        try:
-            # Try to find JSON in response
-            start = response.find("[")
-            end = response.rfind("]") + 1
-            if start != -1 and end != -1:
-                json_str = response[start:end]
-                actions = json.loads(json_str)
-                for action in actions:
-                    db_action = ActionItem(
-                        email_id=email.id,
-                        description=action.get("description", "Unknown task"),
-                        deadline=action.get("deadline")
-                    )
-                    db.add(db_action)
-        except Exception as e:
-            print(f"Failed to parse actions: {e}")
+        
+        # Parse JSON
+        import re
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        data = {}
+        if json_match:
+            try:
+                data = json.loads(json_match.group())
+            except:
+                pass
+        
+        # Populate Email Fields
+        email.sentiment = data.get("sentiment", "neutral")
+        email.emotion = data.get("emotion", "neutral")
+        email.urgency_score = data.get("urgency_score", 5)
+        email.category = data.get("category", "Uncategorized")
+        
+        # Populate Actions
+        actions = data.get("action_items", [])
+        for action in actions:
+            db_action = ActionItem(
+                email_id=email.id,
+                description=action.get("description", "Unknown task"),
+                deadline=action.get("deadline")
+            )
+            db.add(db_action)
+            
+        # Populate Followups
+        followups = data.get("followups", [])
+        for followup in followups:
+            db_followup = FollowUp(
+                email_id=email.id,
+                commitment=followup.get("commitment", ""),
+                committed_by=followup.get("committed_by", email.sender),
+                due_date=followup.get("due_date")
+            )
+            db.add(db_followup)
 
-    # 5. Follow-up Extraction
-    followups = extract_followups(email.subject, email.body, email.sender)
-    for followup in followups:
-        db_followup = FollowUp(
-            email_id=email.id,
-            commitment=followup.get("commitment", ""),
-            committed_by=followup.get("committed_by", email.sender),
-            due_date=followup.get("due_date")
-        )
-        db.add(db_followup)
+    except Exception as e:
+        print(f"Comprehensive analysis failed: {e}")
+        # Fallback values if analysis fails completely
+        email.category = "Uncategorized"
+        email.sentiment = "neutral"
 
     db.commit()
     return email
