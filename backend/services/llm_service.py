@@ -35,7 +35,7 @@ class LLMService:
             self.is_mock = True
             print("Warning: GEMINI_API_KEY not found. Using Mock LLM.")
 
-    def generate_text(self, prompt: str) -> str:
+    def generate_text(self, prompt: str, json_mode: bool = False) -> str:
         # Redact PII from prompt for safety
         safe_prompt = pii_service.redact(prompt)
         
@@ -43,7 +43,14 @@ class LLMService:
             return self._mock_response(safe_prompt)
         
         try:
-            response = self.model.generate_content(safe_prompt)
+            generation_config = {}
+            if json_mode:
+                generation_config["response_mime_type"] = "application/json"
+            
+            response = self.model.generate_content(
+                safe_prompt, 
+                generation_config=generation_config
+            )
             return response.text
         except Exception as e:
             print(f"LLM Error: {e}")

@@ -55,7 +55,7 @@ IMPORTANT: Do NOT use "Uncategorized". Always choose the best fit.
 Respond ONLY with the valid JSON object."""
 
     try:
-        response = llm_service.generate_text(prompt_text)
+        response = llm_service.generate_text(prompt_text, json_mode=True)
         
         # Parse JSON
         import re
