@@ -23,5 +23,9 @@ def test_prompt(request: TestPromptRequest, db: Session = Depends(get_db)):
     # Simple variable substitution
     prompt_text = request.template.replace("{subject}", email.subject).replace("{body}", email.body).replace("{sender}", email.sender)
     
-    response = llm_service.generate_text(prompt_text)
-    return {"response": response}
+    try:
+        response = llm_service.generate_text(prompt_text)
+        return {"response": response}
+    except Exception as e:
+        print(f"Playground Error: {e}")
+        raise HTTPException(status_code=500, detail=f"LLM Error: {str(e)}")

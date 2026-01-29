@@ -4,8 +4,14 @@ import numpy as np
 import google.generativeai as genai
 from typing import List, Dict, Any, Optional
 from backend.models import Email
-from pinecone import Pinecone, ServerlessSpec
-from backend.services.entity_service import entity_service
+
+# Lazy import to avoid crash if pinecone is not installed
+try:
+    from pinecone import Pinecone, ServerlessSpec
+    PINECONE_AVAILABLE = True
+except ImportError:
+    print("Pinecone not available. RAG will run in mock mode.")
+    PINECONE_AVAILABLE = False
 
 class RAGService:
     def __init__(self):
@@ -13,7 +19,7 @@ class RAGService:
         self.pinecone_api_key = os.getenv("PINECONE_API_KEY")
         self.index_name = "eboxai-memory"
         
-        self.is_mock = not self.api_key or not self.pinecone_api_key
+        self.is_mock = not self.api_key or not self.pinecone_api_key or not PINECONE_AVAILABLE
         
         # Configure Gemini
         if self.api_key:
