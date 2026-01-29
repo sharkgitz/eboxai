@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from backend.database import engine, Base, get_db, SessionLocal
 from backend import models  # Explicit import to ensure models are registered
-from backend.routers import inbox, prompts, agent, action_items, playground, followups, meetings
+from backend.routers import inbox, prompts, agent, action_items, playground, followups, meetings, dossier
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -25,6 +25,7 @@ app.include_router(action_items.router)
 app.include_router(playground.router)
 app.include_router(followups.router)
 app.include_router(meetings.router)
+app.include_router(dossier.router)
 
 from backend.services import inbox_service
 
