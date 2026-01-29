@@ -33,6 +33,23 @@ from backend.services import inbox_service
 async def root():
     return {"message": "Email Agent API is running"}
 
+@app.get("/status")
+async def status():
+    """Returns the current status of AI services for debugging."""
+    from backend.services.llm_service import llm_service
+    from backend.services.rag_service import rag_service
+    
+    return {
+        "llm": {
+            "mode": "MOCK" if llm_service.is_mock else "REAL (Gemini)",
+            "key_present": bool(llm_service.api_key)
+        },
+        "rag": {
+            "mode": "MOCK" if rag_service.is_mock else "REAL (Pinecone)",
+            "pinecone_connected": rag_service.index is not None
+        }
+    }
+
 @app.on_event("startup")
 def startup_event():
     """
