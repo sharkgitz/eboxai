@@ -165,14 +165,17 @@ def chat_agent(db: Session, query: str, email_id: str = None):
             context = f"Context Email:\nSender: {email.sender}\nSubject: {email.subject}\nBody: {email.body}\n\n"
     else:
         # RAG Search
-        # First, ensure we have indexed emails. In a real app, this would be done async on ingestion.
-        if not rag_service.embeddings:
-            all_emails = db.query(Email).all()
-            rag_service.index_emails(all_emails)
+        # Use Pinecone to find relevant context
+        relevant_emails = []
         
-        relevant_emails = rag_service.search(query)
+        if not rag_service.is_mock:
+            # Search Pinecone for relevant emails
+            rag_results = rag_service.search(query, k=5)
+            # rag_results is list of metadata dicts, convert to pseudo Email objects for context
+            for r in rag_results:
+                relevant_emails.append(type('Email', (), r)()) # Create simple object from dict
         
-        # Fallback: If RAG returns nothing (or query is generic "summarize"), fetch recent emails
+        # Fallback: If RAG returns nothing (or query is generic "summarize"), fetch recent emails from DB
         if not relevant_emails or "summarize" in query.lower():
             # Get recent emails if RAG failed or for summary queries
             relevant_emails = db.query(Email).order_by(Email.timestamp.desc()).limit(10).all()
