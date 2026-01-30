@@ -55,7 +55,7 @@ const Agent = () => {
     return (
         <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
             {/* Header */}
-            <header className="px-8 py-5 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+            <div className="h-16 bg-white/70 backdrop-blur-xl border-b border-white/50 flex items-center justify-between px-6 flex-shrink-0 z-10 shadow-sm relative">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-200">
                         <Brain className="text-white" size={20} />
@@ -71,7 +71,7 @@ const Agent = () => {
                         </div>
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6" ref={scrollRef}>
