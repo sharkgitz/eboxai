@@ -2,7 +2,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./email_agent.db"
+import os
+
+# Explicit absolute path to ensure consistency
+DB_PATH = "C:\\Users\\vaish\\eboxai\\email-agent\\backend\\email_agent_v2.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}

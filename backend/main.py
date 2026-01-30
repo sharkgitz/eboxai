@@ -27,6 +27,8 @@ app.include_router(followups.router)
 app.include_router(meetings.router)
 app.include_router(dossier.router)
 app.include_router(agentic.router)
+from backend.routers import analytics
+app.include_router(analytics.router)
 
 from backend.services import inbox_service
 
@@ -77,3 +79,6 @@ def seed_db(db: Session = Depends(get_db)):
         return {"message": "Database seeded successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+# Force Reload
+# Force Reload
+# Reload

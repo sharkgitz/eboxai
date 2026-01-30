@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON, Float, Text
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime
@@ -27,6 +27,12 @@ class Email(Base):
     has_dark_patterns = Column(Boolean, default=False)
     dark_patterns = Column(Text, default="[]")  # JSON string of pattern names
     dark_pattern_severity = Column(String, default="low")  # low, medium, high
+
+    # Trust & Analytics Layer (Phase 8)
+    confidence_score = Column(Float, default=0.0)  # 0.0 to 1.0
+    rag_sources = Column(JSON, default=[])  # List of source document IDs/Names
+    human_edited = Column(Boolean, default=False)  # True if user modified the draft
+    processing_time_seconds = Column(Float, default=0.0)  # Time taken for AI to process
     
     # Relationships
     action_items = relationship("ActionItem", back_populates="email")

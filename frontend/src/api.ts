@@ -55,6 +55,10 @@ export const inboxApi = {
     updateActionItem: (id: number, status: string) => api.patch(`/action-items/${id}`, { status }),
 };
 
+export const analyticsApi = {
+    getDashboard: () => api.get('/analytics/dashboard'),
+};
+
 export const agentApi = {
     process: (id: string) => api.post(`/agent/process/${id}`),
     processAll: () => api.post('/agent/process-all'),

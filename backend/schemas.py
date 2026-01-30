@@ -22,6 +22,12 @@ class EmailBase(BaseModel):
     
     # Dark Patterns
     has_dark_patterns: bool = False
+    
+    # Trust & Analytics (Phase 8)
+    confidence_score: float = 0.0
+    rag_sources: List[str] = []
+    human_edited: bool = False
+    processing_time_seconds: float = 0.0
 
 class EmailCreate(EmailBase):
     pass

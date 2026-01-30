@@ -13,7 +13,10 @@ import DossierSidebar from '../components/DossierSidebar';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { useSearchParams } from 'react-router-dom';
+
 const Inbox = () => {
+    const [searchParams] = useSearchParams();
     const [emails, setEmails] = useState<Email[]>([]);
     const [selectedEmail, setSelectedEmail] = useState<EmailDetail | null>(null);
     const [loading, setLoading] = useState(false);
@@ -26,9 +29,14 @@ const Inbox = () => {
     const [showDossier, setShowDossier] = useState(false);
     const [quickActions, setQuickActions] = useState<any[]>([]);
     const [smartReplyLoading, setSmartReplyLoading] = useState(false);
+    const [filterUrgent, setFilterUrgent] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (searchParams.get('filter') === 'urgent') {
+            setFilterUrgent(true);
+            setSortBy('priority');
+        }
         fetchEmails();
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -177,11 +185,19 @@ const Inbox = () => {
 
     // Filter and sort emails
     const filteredEmails = emails
-        .filter(e =>
-            e.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            e.sender?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            e.body?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        .filter(e => {
+            const matchesSearch = e.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                e.sender?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                e.body?.toLowerCase().includes(searchQuery.toLowerCase());
+
+            if (filterUrgent) {
+                // FALLBACK: If API misses urgency_score, infer from subject/deadline
+                const score = (e.urgency_score || 0);
+                const isUrgentByKeyword = e.subject?.toLowerCase().includes('urgent') || e.deadline_text;
+                return matchesSearch && (score >= 7 || isUrgentByKeyword);
+            }
+            return matchesSearch;
+        })
         .sort((a, b) => {
             if (sortBy === 'priority') {
                 return (b.urgency_score || 0) - (a.urgency_score || 0);
@@ -211,6 +227,15 @@ const Inbox = () => {
                             >
                                 <RefreshCw size={16} />
                             </button>
+                            {filterUrgent && (
+                                <button
+                                    onClick={() => { setFilterUrgent(false); setSortBy('date'); }}
+                                    className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-200"
+                                >
+                                    <Flame size={12} />
+                                    Urgent Only (x)
+                                </button>
+                            )}
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -235,6 +260,22 @@ const Inbox = () => {
                                     </>
                                 )}
                             </motion.button>
+                            {/* Hidden Reset for Debug */}
+                            <button
+                                onClick={async () => {
+                                    if (confirm("Hard Reset: Delete all emails and load defaults?")) {
+                                        setLoading(true);
+                                        for (const e of emails) await inboxApi.delete(e.id);
+                                        await inboxApi.load();
+                                        fetchEmails();
+                                        setLoading(false);
+                                    }
+                                }}
+                                className="px-2 py-1 bg-slate-100 text-slate-400 rounded hover:text-red-500 text-[10px]"
+                                title="Reset Inbox (Delete All & Load Default)"
+                            >
+                                ↻
+                            </button>
                         </div>
                     </div>
 
@@ -277,6 +318,11 @@ const Inbox = () => {
                             </div>
                             <p className="text-sm text-slate-500 font-medium">No emails found</p>
                             <p className="text-xs text-slate-400 mt-1">Try a different search or sync your inbox</p>
+                            <div className="mt-4 p-2 hidden bg-slate-100 rounded text-xs text-slate-500 font-mono">
+                                Total: {emails.length} |
+                                Filter: {String(filterUrgent)} |
+                                Sample: {emails[0]?.subject} (Score: {emails[0]?.urgency_score})
+                            </div>
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100">
