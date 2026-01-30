@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
-import { User, Building, History, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { User, Building, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface DossierProps {
     emailId: string | null;
@@ -75,8 +75,8 @@ const DossierSidebar: React.FC<DossierProps> = ({ emailId, onClose }) => {
                         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Relationship Health</h4>
                         <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg">
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center ${data.sentiment.current === 'Positive' ? 'bg-green-100 text-green-600' :
-                                    data.sentiment.current === 'Negative' ? 'bg-red-100 text-red-600' :
-                                        'bg-gray-100 text-gray-600'
+                                data.sentiment.current === 'Negative' ? 'bg-red-100 text-red-600' :
+                                    'bg-gray-100 text-gray-600'
                                 }`}>
                                 {data.sentiment.current === 'Positive' ? <TrendingUp className="w-6 h-6" /> :
                                     data.sentiment.current === 'Negative' ? <TrendingDown className="w-6 h-6" /> :

@@ -1,20 +1,7 @@
-import { ActionItemsPanel } from '../components/ActionItemsPanel';
-import DossierSidebar from '../components/DossierSidebar';
-import {
-    RefreshCw,
-    Play,
-    Search,
-    Mail,
-    CheckCircle,
-    Clock,
-    Inbox as InboxIcon,
-    Star,
-    MoreHorizontal,
-    Trash2,
-    CheckSquare,
-    Square,
-    User
-} from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { inboxApi, agentApi } from '../api';
+import type { Email, EmailDetail, ActionItem } from '../api';
+import { RefreshCw, Play, Search, Mail, CheckCircle, Clock, Inbox as InboxIcon, Star, MoreHorizontal, Trash2, CheckSquare, Square } from 'lucide-react';
 import { clsx } from 'clsx';
 import AIStatus from '../components/AIStatus';
 import ReactMarkdown from 'react-markdown';
@@ -26,7 +13,6 @@ const Inbox = () => {
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
-    const [showDossier, setShowDossier] = useState<string | null>(null);
     const [draftTone, setDraftTone] = useState('professional');
     const [draftLength, setDraftLength] = useState('concise');
     const menuRef = useRef<HTMLDivElement>(null);
@@ -281,7 +267,6 @@ const Inbox = () => {
                                             </div>
                                         )}
                                     </div>
-                                    </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-brand-500/20">
@@ -291,21 +276,9 @@ const Inbox = () => {
                                         <div className="text-text-primary font-medium">{selectedEmail.sender}</div>
                                         <div className="text-xs text-text-tertiary">{new Date(selectedEmail.timestamp).toLocaleString()}</div>
                                     </div>
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowDossier(selectedEmail.id);
-                                            }}
-                                            className="flex items-center gap-2 px-3 py-1 text-xs font-medium text-brand-600 bg-brand-50 border border-brand-200 rounded-full hover:bg-brand-100 transition-colors"
-                                        >
-                                            <User size={12} />
-                                            View Dossier
-                                        </button>
-                                        <span className={clsx("px-2 py-1 rounded text-xs font-medium border uppercase tracking-wider", getCategoryColor(selectedEmail.category))}>
-                                            {cleanText(selectedEmail.category)}
-                                        </span>
-                                    </div>
+                                    <span className={clsx("ml-auto px-2 py-1 rounded text-xs font-medium border uppercase tracking-wider", getCategoryColor(selectedEmail.category))}>
+                                        {cleanText(selectedEmail.category)}
+                                    </span>
                                 </div>
                             </div>
 
@@ -435,11 +408,7 @@ const Inbox = () => {
                 )}
             </div>
             <AIStatus isProcessing={processing} />
-            <DossierSidebar 
-                emailId={showDossier}
-                onClose={() => setShowDossier(null)}
-            />
-        </div >
+        </div>
     );
 };
 

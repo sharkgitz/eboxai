@@ -9,8 +9,6 @@ import {
     Kanban as KanbanIcon,
     Bell,
     Calendar,
-    HelpCircle,
-    LogOut,
     Sparkles
 } from 'lucide-react';
 import { clsx } from 'clsx';

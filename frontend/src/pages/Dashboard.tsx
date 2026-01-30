@@ -3,7 +3,7 @@ import { inboxApi } from '../api';
 import type { Email } from '../api';
 import {
     Mail, CheckCircle, AlertTriangle, Zap, ArrowUpRight,
-    Calendar, Users, TrendingUp, BarChart3, Clock
+    Users, TrendingUp, BarChart3, Clock
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
@@ -322,7 +322,7 @@ const Dashboard = () => {
     );
 };
 
-const StatCard = ({ title, value, icon: Icon, trend, subtitle, highlight, urgent }: any) => (
+const StatCard = ({ title, value, trend, subtitle, highlight, urgent }: any) => (
     <div className={clsx(
         "rounded-2xl p-5 border transition-all duration-300",
         highlight
