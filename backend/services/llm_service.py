@@ -62,25 +62,19 @@ class LLMService:
             )
             return response.text
         except Exception as e:
-            print(f"LLM Error: {e}")
-            debug_info = f"Error: {str(e)}"
+            error_msg = str(e)
+            print(f"LLM Error: {error_msg}")
             
-            # Diagnostic: Check library version
-            try:
-                import google.generativeai as genai_lib
-                debug_info += f" | Lib: {genai_lib.__version__}"
-            except:
-                pass
-
-            # Diagnostic: List available models
-            try:
-                models = [m.name for m in genai.list_models()]
-                debug_info += f" | Available Models: {', '.join(models)[:200]}..." # Truncate
-            except Exception as list_err:
-                debug_info += f" | ListModels Failed: {str(list_err)}"
-
-            print(f"LLM Failed. Falling back to mock. Debug: {debug_info}")
-            return self._mock_response(safe_prompt)
+            # Diagnostic: Check for common issues
+            if "quota" in error_msg.lower() or "rate" in error_msg.lower():
+                return f"⚠️ API Rate Limit Hit: {error_msg}. Please wait and try again."
+            elif "model" in error_msg.lower() or "not found" in error_msg.lower():
+                return f"⚠️ Model Error: {error_msg}. The AI model may be unavailable."
+            elif "key" in error_msg.lower() or "auth" in error_msg.lower():
+                return f"⚠️ API Key Error: {error_msg}. Please check your GEMINI_API_KEY."
+            else:
+                # Return the actual error to help debug
+                return f"⚠️ LLM Error: {error_msg}"
 
     def _mock_response(self, prompt: str) -> str:
         # Simple heuristic mock responses for demo
