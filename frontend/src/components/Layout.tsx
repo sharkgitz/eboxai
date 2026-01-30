@@ -3,10 +3,19 @@ import Sidebar from './Sidebar';
 
 const Layout = () => {
     return (
-        <div className="flex h-screen bg-background text-text-primary font-sans antialiased selection:bg-brand-500/30">
-            <Sidebar />
-            <main className="flex-1 overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-brand-500/5 via-transparent to-transparent pointer-events-none" />
+        <div className="flex h-screen bg-background text-text-primary font-sans antialiased selection:bg-brand-500/30 overflow-hidden relative">
+            {/* Ambient Background Orbs */}
+            <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-400/20 rounded-full blur-[100px] pointer-events-none z-0" />
+            <div className="fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-400/20 rounded-full blur-[120px] pointer-events-none z-0" />
+            <div className="fixed top-[40%] left-[20%] w-[800px] h-[800px] bg-blue-400/10 rounded-full blur-[120px] pointer-events-none z-0" />
+
+            {/* Sidebar with Glass Effect */}
+            <div className="relative z-20 h-full">
+                <Sidebar />
+            </div>
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-hidden relative z-10 bg-transparent">
                 <Outlet />
             </main>
         </div>
