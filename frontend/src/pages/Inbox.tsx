@@ -1,9 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
 import { inboxApi, agentApi } from '../api';
 import type { Email, EmailDetail, ActionItem } from '../api';
-import { RefreshCw, Play, Search, Mail, CheckCircle, Clock, Inbox as InboxIcon, Star, MoreHorizontal, Trash2, CheckSquare, Square } from 'lucide-react';
+import {
+    RefreshCw, Search, Mail, CheckCircle, Clock, Inbox as InboxIcon,
+    Star, MoreHorizontal, Trash2, CheckSquare, Square, User, Sparkles,
+    ArrowUpDown, Flame
+} from 'lucide-react';
 import { clsx } from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import AIStatus from '../components/AIStatus';
+import DossierSidebar from '../components/DossierSidebar';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -15,6 +21,9 @@ const Inbox = () => {
     const [showMenu, setShowMenu] = useState(false);
     const [draftTone, setDraftTone] = useState('professional');
     const [draftLength, setDraftLength] = useState('concise');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'date' | 'priority'>('date');
+    const [showDossier, setShowDossier] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -82,7 +91,6 @@ const Inbox = () => {
         if (!selectedEmail) return;
         const newStatus = item.status === 'completed' ? 'pending' : 'completed';
 
-        // Optimistic update
         const updatedItems = selectedEmail.action_items.map(i =>
             i.id === item.id ? { ...i, status: newStatus } : i
         );
@@ -92,18 +100,17 @@ const Inbox = () => {
             await inboxApi.updateActionItem(item.id, newStatus);
         } catch (err) {
             console.error(err);
-            // Revert on error
             selectEmail(selectedEmail.id);
         }
     };
 
     const getCategoryColor = (cat: string) => {
-        switch (cat.toLowerCase()) {
-            case 'important': return 'text-red-400 bg-red-500/10 border-red-500/20';
-            case 'newsletter': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
-            case 'spam': return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
-            case 'to-do': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
-            default: return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
+        switch (cat?.toLowerCase()) {
+            case 'important': return 'text-red-600 bg-red-50 border-red-200';
+            case 'newsletter': return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'spam': return 'text-slate-500 bg-slate-100 border-slate-200';
+            case 'to-do': return 'text-amber-600 bg-amber-50 border-amber-200';
+            default: return 'text-purple-600 bg-purple-50 border-purple-200';
         }
     };
 
@@ -112,301 +119,436 @@ const Inbox = () => {
         return text.replace(/\*\*/g, '').replace(/\*/g, '');
     };
 
+    // Filter and sort emails
+    const filteredEmails = emails
+        .filter(e =>
+            e.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            e.sender?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            e.body?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            if (sortBy === 'priority') {
+                return (b.urgency_score || 0) - (a.urgency_score || 0);
+            }
+            return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        });
+
     return (
-        <div className="flex h-full bg-background">
+        <div className="flex h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
             {/* Email List */}
-            <div className="w-[320px] lg:w-[400px] border-r border-border flex flex-col bg-surface">
-                <div className="p-4 border-b border-border space-y-3">
+            <div className="w-[340px] lg:w-[400px] border-r border-slate-200/60 flex flex-col bg-white/80 backdrop-blur-sm">
+                <div className="p-4 border-b border-slate-200/60 space-y-3">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-semibold text-text-primary">Inbox</h2>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                                <Mail size={14} className="text-white" />
+                            </div>
+                            <h2 className="text-lg font-semibold text-slate-800">Inbox</h2>
+                            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                {emails.length} emails
+                            </span>
+                        </div>
                         <div className="flex gap-1">
-                            <button onClick={loadInbox} className="p-1.5 hover:bg-surfaceHighlight rounded-md text-text-secondary hover:text-text-primary transition-colors">
+                            <button
+                                onClick={loadInbox}
+                                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+                            >
                                 <RefreshCw size={16} />
                             </button>
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={processAll}
                                 disabled={processing}
                                 className={clsx(
-                                    "p-1.5 rounded-md transition-all flex items-center gap-2 text-xs font-medium",
+                                    "px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 text-xs font-medium shadow-sm",
                                     processing
-                                        ? "bg-brand-600/50 text-white cursor-wait"
-                                        : "bg-brand-600 hover:bg-brand-500 text-white shadow-sm"
+                                        ? "bg-slate-300 text-slate-500 cursor-wait"
+                                        : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-200/50"
                                 )}
                             >
-                                <Play size={14} className={processing ? "animate-spin" : ""} />
-                                {processing ? 'Processing...' : 'Run Agent'}
-                            </button>
+                                {processing ? (
+                                    <>
+                                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Running...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={14} />
+                                        Run Agent
+                                    </>
+                                )}
+                            </motion.button>
                         </div>
                     </div>
-                    <div className="relative group">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-brand-500 transition-colors" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="w-full bg-surfaceHighlight border border-transparent focus:border-brand-500/50 rounded-md pl-8 pr-3 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none transition-all"
-                        />
+
+                    {/* Search and Sort */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-1 group">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Search emails..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none transition-all"
+                            />
+                        </div>
+                        <button
+                            onClick={() => setSortBy(sortBy === 'date' ? 'priority' : 'date')}
+                            className={clsx(
+                                "px-3 py-2 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all",
+                                sortBy === 'priority'
+                                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                    : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200"
+                            )}
+                        >
+                            <ArrowUpDown size={12} />
+                            {sortBy === 'priority' ? 'Priority' : 'Date'}
+                        </button>
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
                     {loading ? (
                         <div className="flex justify-center p-8">
-                            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                    ) : filteredEmails.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4">
+                            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                                <InboxIcon size={28} className="text-slate-300" />
+                            </div>
+                            <p className="text-sm text-slate-500 font-medium">No emails found</p>
+                            <p className="text-xs text-slate-400 mt-1">Try a different search or sync your inbox</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-border">
-                            {emails.map((email) => (
-                                <div
-                                    key={email.id}
-                                    onClick={() => selectEmail(email.id)}
-                                    className={clsx(
-                                        "p-3 cursor-pointer transition-all duration-200 hover:bg-surfaceHighlight group relative",
-                                        selectedEmail?.id === email.id ? "bg-surfaceHighlight border-l-2 border-l-brand-500" : "border-l-2 border-l-transparent"
-                                    )}
-                                >
-                                    <div className="flex justify-between items-start mb-1">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className={clsx("font-medium text-sm truncate", !email.is_read ? "text-text-primary" : "text-text-secondary")}>
-                                                {email.sender}
-                                            </span>
-                                            {!email.is_read && <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />}
-                                        </div>
-                                        <span className="text-[10px] text-text-tertiary whitespace-nowrap">
-                                            {new Date(email.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                        </span>
-                                    </div>
-                                    <div className={clsx("text-sm mb-1 truncate", !email.is_read ? "text-text-primary font-medium" : "text-text-secondary")}>
-                                        {email.subject}
-                                    </div>
-                                    <div className="text-xs text-text-tertiary line-clamp-1 mb-2">{email.body}</div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className={clsx("text-[10px] px-1.5 py-0.5 rounded border font-medium uppercase tracking-wider", getCategoryColor(email.category))}>
-                                            {cleanText(email.category)}
-                                        </span>
-
-                                        {/* Sentiment Badge */}
-                                        {email.emotion && email.emotion !== 'neutral' && (
-                                            <span className={clsx(
-                                                "text-[10px] px-1.5 py-0.5 rounded border font-medium",
-                                                email.emotion === 'happy' && "bg-green-500/10 border-green-500/30 text-green-400",
-                                                email.emotion === 'frustrated' && "bg-orange-500/10 border-orange-500/30 text-orange-400",
-                                                email.emotion === 'angry' && "bg-red-500/10 border-red-500/30 text-red-400",
-                                                email.emotion === 'worried' && "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
-                                            )}>
-                                                {email.emotion === 'happy' && '😊'}
-                                                {email.emotion === 'frustrated' && '😤'}
-                                                {email.emotion === 'angry' && '😠'}
-                                                {email.emotion === 'worried' && '😰'}
-                                                {email.emotion === 'excited' && '🎉'}
-                                                {' '}{email.emotion}
-                                            </span>
+                        <div className="divide-y divide-slate-100">
+                            <AnimatePresence>
+                                {filteredEmails.map((email, index) => (
+                                    <motion.div
+                                        key={email.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.03 }}
+                                        onClick={() => selectEmail(email.id)}
+                                        className={clsx(
+                                            "p-4 cursor-pointer transition-all duration-200 hover:bg-slate-50 group relative",
+                                            selectedEmail?.id === email.id
+                                                ? "bg-emerald-50/50 border-l-3 border-l-emerald-500"
+                                                : "border-l-3 border-l-transparent"
                                         )}
-
-                                        {/* Urgency Indicator */}
-                                        {email.urgency_score && email.urgency_score >= 7 && (
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded border bg-red-500/10 border-red-500/30 text-red-400 font-medium">
-                                                🔥 URGENT
-                                            </span>
-                                        )}
-
-                                        {/* Dark Pattern Warning */}
-                                        {email.has_dark_patterns && (
-                                            <span className={clsx(
-                                                "text-[10px] px-1.5 py-0.5 rounded border font-medium",
-                                                email.dark_pattern_severity === 'high' && "bg-red-500/10 border-red-500/30 text-red-400",
-                                                email.dark_pattern_severity === 'medium' && "bg-orange-500/10 border-orange-500/30 text-orange-400",
-                                                email.dark_pattern_severity === 'low' && "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
-                                            )}>
-                                                ⚠️ SUSPICIOUS
-                                            </span>
-                                        )}
-
-                                        {email.action_items && email.action_items.length > 0 && (
-                                            <div className="flex items-center gap-1 text-[10px] text-text-tertiary">
-                                                <CheckCircle size={10} />
-                                                {email.action_items.length}
+                                    >
+                                        <div className="flex justify-between items-start mb-1.5">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 text-xs font-semibold shrink-0">
+                                                    {email.sender?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span className={clsx(
+                                                        "font-medium text-sm truncate block",
+                                                        !email.is_read ? "text-slate-800" : "text-slate-500"
+                                                    )}>
+                                                        {email.sender}
+                                                    </span>
+                                                    {!email.is_read && (
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute top-4 right-4" />
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                            <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                                                {new Date(email.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </span>
+                                        </div>
+
+                                        <div className={clsx(
+                                            "text-sm mb-1.5 truncate pl-10",
+                                            !email.is_read ? "text-slate-800 font-medium" : "text-slate-600"
+                                        )}>
+                                            {email.subject}
+                                        </div>
+
+                                        <div className="text-xs text-slate-400 line-clamp-1 mb-2 pl-10">
+                                            {email.body}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-wrap pl-10">
+                                            <span className={clsx(
+                                                "text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                                                getCategoryColor(email.category)
+                                            )}>
+                                                {cleanText(email.category)}
+                                            </span>
+
+                                            {email.urgency_score && email.urgency_score >= 7 && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-600 font-medium flex items-center gap-1">
+                                                    <Flame size={10} />
+                                                    URGENT
+                                                </span>
+                                            )}
+
+                                            {email.has_dark_patterns && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-600 font-medium">
+                                                    ⚠️ Suspicious
+                                                </span>
+                                            )}
+
+                                            {email.action_items && email.action_items.length > 0 && (
+                                                <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                                                    <CheckCircle size={10} />
+                                                    {email.action_items.length} task{email.action_items.length > 1 ? 's' : ''}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
                     )}
                 </div>
             </div>
 
             {/* Email Detail */}
-            <div className="flex-1 bg-background flex flex-col h-full overflow-hidden">
-                {selectedEmail ? (
-                    <div className="flex-1 overflow-y-auto">
-                        <div className="max-w-4xl mx-auto p-8 space-y-8">
-                            {/* Header */}
-                            <div className="border-b border-border pb-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <h1 className="text-2xl font-bold text-text-primary leading-tight">{selectedEmail.subject}</h1>
-                                    <div className="flex gap-2 relative" ref={menuRef}>
-                                        <button className="p-2 hover:bg-surfaceHighlight rounded-md text-text-secondary hover:text-text-primary transition-colors">
-                                            <Star size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => setShowMenu(!showMenu)}
-                                            className="p-2 hover:bg-surfaceHighlight rounded-md text-text-secondary hover:text-text-primary transition-colors"
-                                        >
-                                            <MoreHorizontal size={18} />
-                                        </button>
+            <div className="flex-1 bg-white/50 flex flex-col h-full overflow-hidden">
+                <AnimatePresence mode="wait">
+                    {selectedEmail ? (
+                        <motion.div
+                            key={selectedEmail.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex-1 overflow-y-auto"
+                        >
+                            <div className="max-w-4xl mx-auto p-8 space-y-6">
+                                {/* Header */}
+                                <div className="border-b border-slate-200/60 pb-6">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h1 className="text-2xl font-bold text-slate-800 leading-tight pr-4">
+                                            {selectedEmail.subject}
+                                        </h1>
+                                        <div className="flex gap-2 relative shrink-0" ref={menuRef}>
+                                            <button
+                                                onClick={() => setShowDossier(true)}
+                                                className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-lg text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
+                                            >
+                                                <User size={12} />
+                                                Dossier
+                                            </button>
+                                            <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-amber-500 transition-colors">
+                                                <Star size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => setShowMenu(!showMenu)}
+                                                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+                                            >
+                                                <MoreHorizontal size={18} />
+                                            </button>
 
-                                        {showMenu && (
-                                            <div className="absolute right-0 top-full mt-2 w-48 bg-surface border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-200">
-                                                <button
-                                                    onClick={() => deleteEmail(selectedEmail.id)}
-                                                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-surfaceHighlight flex items-center gap-2"
+                                            {showMenu && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1"
                                                 >
-                                                    <Trash2 size={14} />
-                                                    Delete Email
-                                                </button>
+                                                    <button
+                                                        onClick={() => deleteEmail(selectedEmail.id)}
+                                                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        Delete Email
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-100">
+                                            {selectedEmail.sender?.[0]?.toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-800 font-medium">{selectedEmail.sender}</div>
+                                            <div className="text-xs text-slate-500">
+                                                {new Date(selectedEmail.timestamp).toLocaleString()}
+                                            </div>
+                                        </div>
+                                        <span className={clsx(
+                                            "ml-auto px-2.5 py-1 rounded-full text-xs font-medium border",
+                                            getCategoryColor(selectedEmail.category)
+                                        )}>
+                                            {cleanText(selectedEmail.category)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Body */}
+                                <div className="prose max-w-none text-slate-600 leading-relaxed">
+                                    <p className="whitespace-pre-wrap">{selectedEmail.body}</p>
+                                </div>
+
+                                {/* AI Insights Panel */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-slate-200/60">
+                                    {/* Action Items */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                                <CheckCircle size={14} className="text-emerald-600" />
+                                            </div>
+                                            Action Items
+                                        </h3>
+                                        {selectedEmail.action_items.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {selectedEmail.action_items.map((item, i) => (
+                                                    <motion.div
+                                                        key={i}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: 0.1 * i }}
+                                                        onClick={() => toggleActionItem(item)}
+                                                        className={clsx(
+                                                            "flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer group",
+                                                            item.status === 'completed'
+                                                                ? "bg-emerald-50 border-emerald-100"
+                                                                : "bg-slate-50 border-transparent hover:border-slate-200"
+                                                        )}
+                                                    >
+                                                        <div className={clsx(
+                                                            "mt-0.5 transition-colors",
+                                                            item.status === 'completed' ? "text-emerald-500" : "text-slate-400 group-hover:text-emerald-500"
+                                                        )}>
+                                                            {item.status === 'completed' ? <CheckSquare size={16} /> : <Square size={16} />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className={clsx(
+                                                                "text-sm transition-colors",
+                                                                item.status === 'completed' ? "text-slate-500 line-through" : "text-slate-700"
+                                                            )}>
+                                                                {item.description}
+                                                            </div>
+                                                            {item.deadline && (
+                                                                <div className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+                                                                    <Clock size={10} /> {item.deadline}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-sm text-slate-400 text-center py-4">
+                                                No action items detected
                                             </div>
                                         )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-brand-500/20">
-                                        {selectedEmail.sender[0].toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <div className="text-text-primary font-medium">{selectedEmail.sender}</div>
-                                        <div className="text-xs text-text-tertiary">{new Date(selectedEmail.timestamp).toLocaleString()}</div>
-                                    </div>
-                                    <span className={clsx("ml-auto px-2 py-1 rounded text-xs font-medium border uppercase tracking-wider", getCategoryColor(selectedEmail.category))}>
-                                        {cleanText(selectedEmail.category)}
-                                    </span>
-                                </div>
-                            </div>
+                                    </motion.div>
 
-                            {/* Body */}
-                            <div className="prose prose-invert max-w-none text-text-secondary leading-relaxed">
-                                <p className="whitespace-pre-wrap">{selectedEmail.body}</p>
-                            </div>
-
-                            {/* AI Insights Panel */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-border">
-                                {/* Action Items */}
-                                <div className="bg-surface border border-border rounded-xl p-5 hover:border-brand-500/20 transition-colors">
-                                    <h3 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                        <CheckCircle size={16} className="text-green-500" />
-                                        Action Items
-                                    </h3>
-                                    {selectedEmail.action_items.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {selectedEmail.action_items.map((item, i) => (
-                                                <div
-                                                    key={i}
-                                                    onClick={() => toggleActionItem(item)}
-                                                    className={clsx(
-                                                        "flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer group",
-                                                        item.status === 'completed'
-                                                            ? "bg-green-500/10 border-green-500/20"
-                                                            : "bg-surfaceHighlight/50 border-transparent hover:border-border"
-                                                    )}
-                                                >
-                                                    <div className={clsx(
-                                                        "mt-1 transition-colors",
-                                                        item.status === 'completed' ? "text-green-500" : "text-text-tertiary group-hover:text-brand-500"
-                                                    )}>
-                                                        {item.status === 'completed' ? <CheckSquare size={16} /> : <Square size={16} />}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className={clsx(
-                                                            "text-sm transition-colors",
-                                                            item.status === 'completed' ? "text-text-secondary line-through" : "text-text-primary"
-                                                        )}>
-                                                            {item.description}
-                                                        </div>
-                                                        {item.deadline && (
-                                                            <div className="text-xs text-red-400 mt-1 flex items-center gap-1 font-medium">
-                                                                <Clock size={12} /> {item.deadline}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-sm text-text-tertiary italic">No action items detected.</div>
-                                    )}
-                                </div>
-
-                                {/* Drafts */}
-                                <div className="bg-surface border border-border rounded-xl p-5 hover:border-brand-500/20 transition-colors">
-                                    <h3 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                        <Mail size={16} className="text-brand-500" />
-                                        Draft Reply
-                                    </h3>
-                                    {selectedEmail.drafts.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {selectedEmail.drafts.map((draft, i) => (
-                                                <div key={i} className="p-4 bg-surfaceHighlight/50 rounded-lg border border-transparent hover:border-border transition-colors">
-                                                    <div className="text-xs text-brand-500 font-bold mb-2 uppercase tracking-wider">Subject: {draft.subject}</div>
-                                                    <div className="text-sm text-text-secondary font-mono text-xs">
-                                                        <ReactMarkdown
-                                                            remarkPlugins={[remarkGfm]}
-                                                            components={{
-                                                                ul: ({ node, ...props }) => <ul className="list-disc ml-4 my-2" {...props} />,
-                                                                ol: ({ node, ...props }) => <ol className="list-decimal ml-4 my-2" {...props} />,
-                                                                li: ({ node, ...props }) => <li className="my-1" {...props} />,
-                                                                p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                                strong: ({ node, ...props }) => <span className="font-medium text-blue-200" {...props} />,
-                                                            }}
-                                                        >
-                                                            {cleanText(draft.body)}
-                                                        </ReactMarkdown>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-8">
-                                            <div className="flex gap-4 justify-center mb-4">
-                                                <select
-                                                    value={draftTone}
-                                                    onChange={(e) => setDraftTone(e.target.value)}
-                                                    className="bg-surfaceHighlight border border-border rounded-md px-2 py-1 text-sm text-text-primary focus:outline-none focus:border-brand-500"
-                                                >
-                                                    <option value="professional">Professional</option>
-                                                    <option value="casual">Casual</option>
-                                                    <option value="friendly">Friendly</option>
-                                                    <option value="urgent">Urgent</option>
-                                                </select>
-                                                <select
-                                                    value={draftLength}
-                                                    onChange={(e) => setDraftLength(e.target.value)}
-                                                    className="bg-surfaceHighlight border border-border rounded-md px-2 py-1 text-sm text-text-primary focus:outline-none focus:border-brand-500"
-                                                >
-                                                    <option value="concise">Concise</option>
-                                                    <option value="detailed">Detailed</option>
-                                                    <option value="bulleted">Bulleted</option>
-                                                </select>
+                                    {/* Drafts */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
+                                                <Mail size={14} className="text-blue-600" />
                                             </div>
-                                            <button
-                                                onClick={() => agentApi.draft(selectedEmail.id, undefined, draftTone, draftLength).then(() => selectEmail(selectedEmail.id))}
-                                                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40"
-                                            >
-                                                Generate Draft Reply
-                                            </button>
-                                        </div>
-                                    )}
+                                            Draft Reply
+                                        </h3>
+                                        {selectedEmail.drafts.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {selectedEmail.drafts.map((draft, i) => (
+                                                    <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                                        <div className="text-xs text-blue-600 font-semibold mb-2">
+                                                            Re: {draft.subject}
+                                                        </div>
+                                                        <div className="text-sm text-slate-600 font-mono text-xs leading-relaxed">
+                                                            <ReactMarkdown
+                                                                remarkPlugins={[remarkGfm]}
+                                                                components={{
+                                                                    ul: ({ node, ...props }) => <ul className="list-disc ml-4 my-2" {...props} />,
+                                                                    ol: ({ node, ...props }) => <ol className="list-decimal ml-4 my-2" {...props} />,
+                                                                    li: ({ node, ...props }) => <li className="my-1" {...props} />,
+                                                                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                                    strong: ({ node, ...props }) => <span className="font-medium text-emerald-600" {...props} />,
+                                                                }}
+                                                            >
+                                                                {cleanText(draft.body)}
+                                                            </ReactMarkdown>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-6">
+                                                <div className="flex gap-3 justify-center mb-4">
+                                                    <select
+                                                        value={draftTone}
+                                                        onChange={(e) => setDraftTone(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                                                    >
+                                                        <option value="professional">Professional</option>
+                                                        <option value="casual">Casual</option>
+                                                        <option value="friendly">Friendly</option>
+                                                        <option value="urgent">Urgent</option>
+                                                    </select>
+                                                    <select
+                                                        value={draftLength}
+                                                        onChange={(e) => setDraftLength(e.target.value)}
+                                                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                                                    >
+                                                        <option value="concise">Concise</option>
+                                                        <option value="detailed">Detailed</option>
+                                                        <option value="bulleted">Bulleted</option>
+                                                    </select>
+                                                </div>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.02 }}
+                                                    whileTap={{ scale: 0.98 }}
+                                                    onClick={() => agentApi.draft(selectedEmail.id, undefined, draftTone, draftLength).then(() => selectEmail(selectedEmail.id))}
+                                                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-emerald-200/50"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <Sparkles size={14} />
+                                                        Generate Draft
+                                                    </span>
+                                                </motion.button>
+                                            </div>
+                                        )}
+                                    </motion.div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-text-tertiary">
-                        <div className="w-16 h-16 rounded-2xl bg-surfaceHighlight flex items-center justify-center mb-4">
-                            <InboxIcon size={32} className="opacity-50" />
-                        </div>
-                        <p className="font-medium">Select an email to view details</p>
-                    </div>
-                )}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex-1 flex flex-col items-center justify-center text-slate-400"
+                        >
+                            <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                                <InboxIcon size={36} className="text-slate-300" />
+                            </div>
+                            <p className="font-medium text-slate-500">Select an email to view details</p>
+                            <p className="text-sm text-slate-400 mt-1">Your AI-powered inbox awaits</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
+
+            {/* Dossier Sidebar */}
+            <AnimatePresence>
+                {showDossier && selectedEmail && (
+                    <DossierSidebar
+                        emailId={selectedEmail.id}
+                        onClose={() => setShowDossier(false)}
+                    />
+                )}
+            </AnimatePresence>
+
             <AIStatus isProcessing={processing} />
         </div>
     );
