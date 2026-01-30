@@ -213,4 +213,25 @@ def chat_agent(db: Session, query: str, email_id: str = None):
             context += "End of relevant emails.\n\n"
 
     prompt = f"You are a helpful Email Productivity Agent. You have access to the user's emails provided in the context below.\n\nIMPORTANT: Format your response using Markdown. Use headers (##) for sections, bullet points (-) for lists, and bolding (**) for emphasis. Do not output a single block of text.\n\n{context}User Query: {query}\n\nAgent Response:"
+    
+    # ENHANCEMENT: Add Graph Context if query is about people or relationships
+    if not email_id:
+        from backend.services.graph_service import get_context_for_chat
+        graph_context = get_context_for_chat(db, query)
+        if graph_context:
+            prompt = f"""You are a helpful Email Productivity Agent.
+            
+RELATIONSHIP CONTEXT:
+{graph_context}
+
+EMAIL CONTEXT:
+{context}
+
+USER QUERY:
+{query}
+
+IMPORTANT: Use the Relationship Context to provide personalized answers (e.g. knowing who is a VIP).
+Format your response using Markdown. Use headers (##) for sections, bullet points (-) for lists.
+Agent Response:"""
+
     return llm_service.generate_text(prompt)

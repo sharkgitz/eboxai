@@ -81,3 +81,9 @@ export const followupsApi = {
     getAll: () => api.get('/followups/'),
     updateStatus: (id: number, status: string) => api.patch(`/followups/${id}`, { status }),
 };
+
+export const agenticApi = {
+    getActions: (emailId: string) => api.get(`/agentic/actions/${emailId}`),
+    executeAction: (actionType: string, params: any) => api.post('/agentic/execute', { action_type: actionType, params }),
+    smartReply: (emailId: string, intent: string) => api.post('/agentic/smart-reply', { email_id: emailId, intent }),
+};

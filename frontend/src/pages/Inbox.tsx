@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { inboxApi, agentApi } from '../api';
+import { inboxApi, agentApi, agenticApi } from '../api';
 import type { Email, EmailDetail, ActionItem } from '../api';
 import {
     RefreshCw, Search, Mail, CheckCircle, Clock, Inbox as InboxIcon,
     Star, MoreHorizontal, Trash2, CheckSquare, Square, User, Sparkles,
-    ArrowUpDown, Flame
+    ArrowUpDown, Flame, Zap, MessageSquare
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +24,8 @@ const Inbox = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'date' | 'priority'>('date');
     const [showDossier, setShowDossier] = useState(false);
+    const [quickActions, setQuickActions] = useState<any[]>([]);
+    const [smartReplyLoading, setSmartReplyLoading] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -68,6 +70,7 @@ const Inbox = () => {
             const res = await inboxApi.getOne(id);
             setSelectedEmail(res.data);
             setShowMenu(false);
+            fetchQuickActions(id);
         } catch (err) {
             console.error(err);
         }
@@ -101,6 +104,59 @@ const Inbox = () => {
         } catch (err) {
             console.error(err);
             selectEmail(selectedEmail.id);
+        }
+    };
+
+    const fetchQuickActions = async (emailId: string) => {
+        try {
+            const res = await agenticApi.getActions(emailId);
+            setQuickActions(res.data.actions || []);
+        } catch (err) {
+            console.error("Failed to fetch quick actions:", err);
+            setQuickActions([]);
+        }
+    };
+
+    const executeQuickAction = async (action: any) => {
+        if (!selectedEmail) return;
+
+        // Optimistic UI updates
+        if (action.type === 'flag_urgent') {
+            setSelectedEmail({ ...selectedEmail, urgency_score: 10 });
+        }
+
+        try {
+            const res = await agenticApi.executeAction(action.type, action.params);
+
+            if (res.data.success) {
+                // Refresh email to get latest state (new draft, etc)
+                const updated = await inboxApi.getOne(selectedEmail.id);
+                setSelectedEmail(updated.data);
+
+                // Show success toast (conceptual)
+                console.log(res.data.message);
+            }
+        } catch (err) {
+            console.error("Action execution failed:", err);
+        }
+    };
+
+    const useSmartReply = async (intent: string) => {
+        if (!selectedEmail) return;
+        setSmartReplyLoading(true);
+        try {
+            const res = await agenticApi.smartReply(selectedEmail.id, intent);
+            if (res.data.reply) {
+                // Create draft with this content
+                await agentApi.draft(selectedEmail.id, res.data.reply);
+                // Refresh to show draft
+                const updated = await inboxApi.getOne(selectedEmail.id);
+                setSelectedEmail(updated.data);
+            }
+        } catch (err) {
+            console.error("Smart reply failed:", err);
+        } finally {
+            setSmartReplyLoading(false);
         }
     };
 
@@ -386,6 +442,21 @@ const Inbox = () => {
                                             {cleanText(selectedEmail.category)}
                                         </span>
                                     </div>
+                                    <div className="flex items-center gap-3 mt-4">
+                                        {quickActions.map((action, i) => (
+                                            <motion.button
+                                                key={i}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: 0.1 * i }}
+                                                onClick={() => executeQuickAction(action)}
+                                                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors border border-indigo-200"
+                                            >
+                                                <Zap size={12} className="fill-indigo-700/20" />
+                                                {action.description}
+                                            </motion.button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 {/* Body */}
@@ -492,6 +563,20 @@ const Inbox = () => {
                                             </div>
                                         ) : (
                                             <div className="text-center py-6">
+                                                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                                                    {["Acknowledge", "Accept", "Decline", "Clarify"].map((intent) => (
+                                                        <button
+                                                            key={intent}
+                                                            disabled={smartReplyLoading}
+                                                            onClick={() => useSmartReply(intent.toLowerCase())}
+                                                            className="px-3 py-1.5 rounded-full border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-50"
+                                                        >
+                                                            <MessageSquare size={12} />
+                                                            {intent}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
                                                 <div className="flex gap-3 justify-center mb-4">
                                                     <select
                                                         value={draftTone}
