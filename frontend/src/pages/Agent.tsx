@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { agentApi } from '../api';
-import { Send, Bot, User, Sparkles, Zap, MessageSquare, Brain } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Zap, Brain } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -45,160 +45,150 @@ const Agent = () => {
         }
     };
 
-    const cleanContent = (content: string) => {
-        if (!content) return "";
-        return content.replace(/\*\*/g, '').replace(/\*/g, '');
-    };
-
-    const quickActions = [
-        { label: 'Summarize inbox', icon: MessageSquare },
-        { label: 'Find urgent emails', icon: Zap },
-        { label: 'Draft a reply', icon: Send },
+    const suggestions = [
+        "What are my top priorities today?",
+        "Do I have any meetings today?",
+        "Draft a reply to the last email from John",
+        "Summarize my unread emails"
     ];
 
     return (
-        <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 p-6">
-            <div className="flex-1 max-w-4xl w-full mx-auto flex flex-col overflow-hidden">
-                {/* Header Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 mb-6"
-                >
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-200/50 transform hover:scale-105 transition-transform">
-                                <Bot className="text-white" size={28} />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                    AI Assistant
-                                    <span className="text-[10px] text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">v2.0</span>
-                                </h1>
-                                <p className="text-sm text-slate-500 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    Online & Ready to Help
-                                </p>
-                            </div>
-                        </div>
+        <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
+            {/* Header */}
+            <header className="px-8 py-5 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-200">
+                        <Brain className="text-white" size={20} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-800">Agent Chat</h1>
                         <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 rounded-full">
-                                <Brain size={14} className="text-slate-500" />
-                                <span className="text-xs text-slate-600 font-medium">Context-Aware</span>
-                            </div>
+                            <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-xs text-emerald-600 font-medium">Online & Ready</span>
                         </div>
                     </div>
-                </motion.div>
+                </div>
+            </header>
 
-                {/* Chat Container */}
-                <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={scrollRef}>
-                        <AnimatePresence>
-                            {messages.map((msg, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ duration: 0.3, ease: "easeOut" }}
-                                    className={clsx(
-                                        "flex gap-3 max-w-[85%]",
-                                        msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                                    )}
-                                >
-                                    <div className={clsx(
-                                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
-                                        msg.role === 'user'
-                                            ? "bg-gradient-to-br from-slate-600 to-slate-700"
-                                            : "bg-gradient-to-br from-emerald-500 to-teal-600"
-                                    )}>
-                                        {msg.role === 'user' ? <User size={16} className="text-white" /> : <Sparkles size={16} className="text-white" />}
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <div className={clsx(
-                                            "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
-                                            msg.role === 'user'
-                                                ? "bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-tr-md"
-                                                : "bg-slate-100 text-slate-700 border border-slate-200/50 rounded-tl-md"
-                                        )}>
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                components={{
-                                                    ul: ({ node, ...props }) => <ul className="list-disc ml-4 my-2" {...props} />,
-                                                    ol: ({ node, ...props }) => <ol className="list-decimal ml-4 my-2" {...props} />,
-                                                    li: ({ node, ...props }) => <li className="my-1" {...props} />,
-                                                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                    strong: ({ node, ...props }) => <span className={clsx("font-semibold", msg.role === 'user' ? "text-emerald-300" : "text-emerald-600")} {...props} />,
-                                                }}
-                                            >
-                                                {cleanContent(msg.content)}
-                                            </ReactMarkdown>
-                                        </div>
-                                        {msg.timestamp && (
-                                            <span className={clsx("text-[10px] text-slate-400 px-1", msg.role === 'user' ? "text-right" : "")}>
-                                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-
-                        {loading && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex gap-3 max-w-[85%]"
-                            >
-                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-sm">
-                                    <Sparkles size={16} className="text-white" />
-                                </div>
-                                <div className="px-4 py-3 rounded-2xl bg-slate-100 border border-slate-200/50 rounded-tl-md flex gap-1.5 items-center">
-                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                </div>
-                            </motion.div>
-                        )}
-                    </div>
-
-                    {/* Quick Actions - show only when no messages yet */}
-                    {messages.length <= 1 && (
-                        <div className="px-6 pb-2">
-                            <p className="text-xs text-slate-400 mb-2">Try asking:</p>
-                            <div className="flex gap-2 flex-wrap">
-                                {quickActions.map((action, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setInput(action.label)}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 rounded-full text-xs font-medium transition-all hover:shadow-sm"
-                                    >
-                                        <action.icon size={12} />
-                                        {action.label}
-                                    </button>
-                                ))}
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6" ref={scrollRef}>
+                <AnimatePresence initial={false}>
+                    {messages.map((msg, idx) => (
+                        <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={clsx(
+                                "flex gap-4 max-w-3xl mx-auto",
+                                msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                            )}
+                        >
+                            <div className={clsx(
+                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm mt-1",
+                                msg.role === 'user'
+                                    ? "bg-emerald-500 text-white shadow-emerald-200"
+                                    : "bg-white border border-slate-200 text-purple-600"
+                            )}>
+                                {msg.role === 'user'
+                                    ? <User size={16} />
+                                    : <Bot size={16} />
+                                }
                             </div>
+
+                            <div className={clsx(
+                                "rounded-2xl p-4 md:p-6 shadow-sm max-w-[85%] text-sm leading-relaxed",
+                                msg.role === 'user'
+                                    ? "bg-emerald-500 text-white rounded-tr-sm shadow-emerald-100"
+                                    : "bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm"
+                            )}>
+                                {msg.role === 'agent' ? (
+                                    <div className="prose prose-sm max-w-none text-slate-700 prose-headings:text-slate-800 prose-strong:text-slate-800 prose-code:text-indigo-600 prose-pre:bg-slate-50 prose-pre:border prose-pre:border-slate-200">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-1" {...props} />,
+                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-4 space-y-1" {...props} />,
+                                            }}
+                                        >
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                ) : (
+                                    msg.content
+                                )}
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex gap-4 max-w-3xl mx-auto"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                            <Bot size={16} className="text-white" />
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-4 shadow-sm flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        </div>
+                    </motion.div>
+                )}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 md:p-8 bg-gradient-to-t from-white via-white to-transparent">
+                <div className="max-w-3xl mx-auto space-y-4">
+                    {/* Suggestions */}
+                    {messages.length === 1 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {suggestions.map((s, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        setInput(s);
+                                    }}
+                                    className="text-left px-4 py-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 transition-colors flex items-center gap-2 group shadow-sm hover:shadow"
+                                >
+                                    <Sparkles size={14} className="text-purple-500 group-hover:scale-110 transition-transform" />
+                                    {s}
+                                </button>
+                            ))}
                         </div>
                     )}
 
-                    {/* Input */}
-                    <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-                        <form onSubmit={handleSubmit} className="relative">
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask about your emails, request summaries, or draft replies..."
-                                className="w-full bg-white border border-slate-200 rounded-xl pl-5 pr-14 py-4 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all shadow-sm"
-                            />
-                            <button
-                                type="submit"
-                                disabled={!input.trim() || loading}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-200/50 hover:shadow-lg hover:scale-105 active:scale-95"
-                            >
-                                <Send size={18} />
-                            </button>
-                        </form>
+                    <form onSubmit={handleSubmit} className="relative group">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder="Ask the agent to summarize emails, find tasks, or draft replies..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-6 pr-14 py-4 shadow-sm focus:outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50/50 transition-all text-slate-800 placeholder:text-slate-400"
+                        />
+                        <button
+                            type="submit"
+                            disabled={!input.trim() || loading}
+                            className={clsx(
+                                "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all",
+                                input.trim() && !loading
+                                    ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md hover:shadow-lg hover:from-purple-600 hover:to-indigo-700 transform hover:scale-105"
+                                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                            )}
+                        >
+                            <Send size={18} />
+                        </button>
+                    </form>
+                    <div className="text-center">
+                        <span className="text-[10px] text-slate-400 flex items-center justify-center gap-1.5">
+                            <Zap size={10} />
+                            Powered by Ebox AI Graph-RAG & Agentic Engine
+                        </span>
                     </div>
                 </div>
             </div>

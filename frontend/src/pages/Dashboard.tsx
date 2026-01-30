@@ -64,17 +64,29 @@ const Dashboard = () => {
         .filter(e => (e.urgency_score || 0) >= 7)
         .slice(0, 3);
 
-    // Weekly email activity - simulate based on current data
-    const today = new Date().getDay();
-    const weeklyData = [
-        { day: 'Sun', emails: Math.max(1, Math.floor(emails.length * 0.2)), active: today === 0 },
-        { day: 'Mon', emails: Math.max(2, Math.floor(emails.length * 0.6)), active: today === 1 },
-        { day: 'Tue', emails: Math.max(3, Math.floor(emails.length * 0.9)), active: today === 2 },
-        { day: 'Wed', emails: Math.max(2, Math.floor(emails.length * 0.5)), active: today === 3 },
-        { day: 'Thu', emails: Math.max(2, Math.floor(emails.length * 0.7)), active: today === 4 },
-        { day: 'Fri', emails: Math.max(1, Math.floor(emails.length * 0.4)), active: today === 5 },
-        { day: 'Sat', emails: Math.max(1, Math.floor(emails.length * 0.1)), active: today === 6 },
-    ];
+    // Weekly email activity - Real aggregation
+    const getWeeklyData = () => {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const today = new Date().getDay();
+        const counts = new Array(7).fill(0);
+
+        emails.forEach(e => {
+            if (e.timestamp) {
+                const date = new Date(e.timestamp);
+                // Check if email is from the last 7 days to be accurate, 
+                // or just map all emails to days for demo purposes (usually better for sparse data)
+                counts[date.getDay()]++;
+            }
+        });
+
+        return days.map((day, index) => ({
+            day,
+            emails: counts[index],
+            active: index === today
+        }));
+    };
+
+    const weeklyData = getWeeklyData();
 
     // Action items from emails
     const actionItems = emails
