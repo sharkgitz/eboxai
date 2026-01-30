@@ -74,7 +74,7 @@ const Sidebar = () => {
     );
 
     return (
-        <div className="w-[260px] h-screen bg-white/60 backdrop-blur-2xl flex flex-col border-r border-white/40 shadow-[4px_0_24px_rgba(0,0,0,0.02)] relative">
+        <div className="w-[260px] h-screen bg-white/60 backdrop-blur-2xl flex flex-col border-r border-white/40 shadow-[4px_0_32px_rgba(0,0,0,0.08)] relative">
             {/* Logo */}
             <div className="p-6 border-b border-gray-100/50">
                 <div className="flex items-center gap-3">
