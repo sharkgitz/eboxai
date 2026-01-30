@@ -133,7 +133,7 @@ const Sidebar = () => {
                         Your inbox is managed by Groq AI for lightning-fast responses.
                     </p>
                     <div className="text-xs font-mono text-brand-200 truncate">
-                        v2.0 • {apiUrl.replace('https://', '').replace('http://', '')}
+                        {apiUrl.replace('https://', '').replace('http://', '')}
                     </div>
                 </div>
             </div>
