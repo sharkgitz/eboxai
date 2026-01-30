@@ -28,7 +28,7 @@ def process_email(db: Session, email_id: str):
     email.dark_pattern_severity = dark_patterns_result.get("severity", "low")
 
     # 2. Comprehensive LLM Analysis (Consolidating 4 calls into 1)
-    # Combined prompt for Sentiment, Category, Actions, and Followups
+    # Combined prompt for Sentiment, Category, Actions, Followups, and Deadline
     prompt_text = f"""Analyze this email and provide a comprehensive JSON response.
 
 Subject: {email.subject}
@@ -39,6 +39,12 @@ Return a single JSON object with the following structure:
 {{
     "category": "Work: Important" | "Work: Routine" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel" | "Social" | "Promotions" | "General",
     "category_reasoning": "Short explanation of why this category was chosen",
+    "urgency_score": 1-10 (10 being most urgent),
+    "deadline": {{
+        "has_deadline": true/false,
+        "deadline_text": "original text like 'by 5 PM today' or 'before Friday' or null",
+        "deadline_iso": "ISO 8601 datetime string or null (e.g., '2026-01-30T17:00:00')"
+    }},
     "action_items": [
         {{ "description": "task description", "deadline": "date or null" }}
     ],
@@ -58,7 +64,15 @@ Classification Guidelines:
 - "Promotions": Sales, discounts, limited time offers.
 - "General": Use this if NO other category fits.
 
-IMPORTANT: You MUST choose one of the above. Do NOT use "Uncategorized".
+Urgency Guidelines:
+- 10: Explicit deadline within 2 hours or ASAP
+- 8-9: Deadline today or tomorrow
+- 6-7: Deadline within the week
+- 4-5: No explicit deadline but action required
+- 1-3: Informational, no action needed
+
+IMPORTANT: You MUST choose one of the categories above. Do NOT use "Uncategorized".
+Look for temporal phrases like "need this by", "deadline is", "before EOD", "ASAP", "urgent", etc.
 
 Respond ONLY with the valid JSON object."""
 
@@ -93,6 +107,18 @@ Respond ONLY with the valid JSON object."""
         email.sentiment = data.get("sentiment", "neutral")
         email.emotion = data.get("emotion", "neutral")
         email.urgency_score = data.get("urgency_score", 5)
+        
+        # Extract Deadline Information
+        deadline_data = data.get("deadline", {})
+        if deadline_data and deadline_data.get("has_deadline"):
+            email.deadline_text = deadline_data.get("deadline_text")
+            deadline_iso = deadline_data.get("deadline_iso")
+            if deadline_iso:
+                try:
+                    from datetime import datetime as dt
+                    email.deadline_datetime = dt.fromisoformat(deadline_iso.replace('Z', '+00:00'))
+                except:
+                    pass
         
         # Default to "Err: Key" checking so we know if model missed the key
         email.category = data.get("category", "Err: Missing Key")

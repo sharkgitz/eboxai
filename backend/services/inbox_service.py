@@ -97,8 +97,55 @@ def load_mock_data(db: Session):
                     db.add(db_prompt)
             db.commit()
 
-def get_emails(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Email).offset(skip).limit(limit).all()
+def get_emails(db: Session, skip: int = 0, limit: int = 100, sort_by: str = "date"):
+    """
+    Get emails with optional sorting.
+    
+    sort_by options:
+    - "date": Sort by timestamp (default, newest first)
+    - "priority": Smart priority sorting (urgency + deadline awareness)
+    """
+    from sqlalchemy import case, func, desc, asc, nullslast
+    
+    query = db.query(Email)
+    
+    if sort_by == "priority":
+        # Priority scoring: Higher urgency_score first, then by deadline proximity
+        # Emails with deadlines coming up soon get higher priority
+        now = datetime.utcnow()
+        
+        # Create a composite priority score
+        # 1. Deadline within 24h = highest priority
+        # 2. High urgency_score (>= 7)
+        # 3. Unread emails
+        # 4. Then by deadline datetime (nulls last)
+        # 5. Finally by timestamp
+        
+        priority_case = case(
+            # Emails with imminent deadlines (within 24h)
+            (Email.deadline_datetime.isnot(None) & (Email.deadline_datetime <= now + timedelta(hours=24)), 100),
+            # High urgency
+            (Email.urgency_score >= 8, 80),
+            # Medium-high urgency
+            (Email.urgency_score >= 6, 60),
+            # Has deadline but further out
+            (Email.deadline_datetime.isnot(None), 40),
+            # Unread
+            (Email.is_read == False, 30),
+            else_=10
+        )
+        
+        query = query.order_by(
+            desc(priority_case),
+            asc(nullslast(Email.deadline_datetime)),
+            desc(Email.urgency_score),
+            desc(Email.timestamp)
+        )
+    else:
+        # Default: sort by date (newest first)
+        query = query.order_by(desc(Email.timestamp))
+    
+    return query.offset(skip).limit(limit).all()
 
 def get_email(db: Session, email_id: str):
     return db.query(Email).filter(Email.id == email_id).first()

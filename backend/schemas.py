@@ -11,6 +11,17 @@ class EmailBase(BaseModel):
     timestamp: datetime
     category: str = "Uncategorized"
     is_read: bool = False
+    
+    # Sentiment & Urgency
+    sentiment: str = "neutral"
+    urgency_score: int = 5
+    
+    # Deadline-Aware Prioritization  
+    deadline_datetime: Optional[datetime] = None
+    deadline_text: Optional[str] = None
+    
+    # Dark Patterns
+    has_dark_patterns: bool = False
 
 class EmailCreate(EmailBase):
     pass

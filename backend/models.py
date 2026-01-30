@@ -19,6 +19,10 @@ class Email(Base):
     emotion = Column(String, default="neutral")  # happy, frustrated, angry, etc.
     urgency_score = Column(Integer, default=5)  # 0-10
     
+    # Deadline-Aware Prioritization
+    deadline_datetime = Column(DateTime, nullable=True)  # Extracted deadline from email body
+    deadline_text = Column(String, nullable=True)  # Original text like "by 5 PM today"
+    
     # Dark Patterns Detection
     has_dark_patterns = Column(Boolean, default=False)
     dark_patterns = Column(Text, default="[]")  # JSON string of pattern names

@@ -21,8 +21,13 @@ def load_inbox(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=List[EmailDetail])
-def read_emails(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    emails = inbox_service.get_emails(db, skip=skip, limit=limit)
+def read_emails(skip: int = 0, limit: int = 100, sort_by: str = "date", db: Session = Depends(get_db)):
+    """
+    Get all emails with optional sorting.
+    
+    - sort_by: "date" (default, newest first) or "priority" (smart priority sorting)
+    """
+    emails = inbox_service.get_emails(db, skip=skip, limit=limit, sort_by=sort_by)
     return emails
 
 @router.delete("/{email_id}")

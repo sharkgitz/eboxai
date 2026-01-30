@@ -29,11 +29,14 @@ export interface Email {
     category: string;
     is_read: boolean;
     action_items?: ActionItem[];
-    // Phase 1: Sentiment Analysis
+    // Sentiment Analysis
     sentiment?: string;
     emotion?: string;
     urgency_score?: number;
-    // Phase 1: Dark Patterns
+    // Deadline-Aware Prioritization
+    deadline_datetime?: string;
+    deadline_text?: string;
+    // Dark Patterns
     has_dark_patterns?: boolean;
     dark_patterns?: string[];
     dark_pattern_severity?: string;
@@ -46,7 +49,7 @@ export interface EmailDetail extends Email {
 
 export const inboxApi = {
     load: () => api.post('/inbox/load'),
-    getAll: () => api.get<Email[]>('/inbox/'),
+    getAll: (sortBy: 'date' | 'priority' = 'date') => api.get<Email[]>(`/inbox/?sort_by=${sortBy}`),
     getOne: (id: string) => api.get<EmailDetail>(`/inbox/${id}`),
     delete: (id: string) => api.delete(`/inbox/${id}`),
     updateActionItem: (id: number, status: string) => api.patch(`/action-items/${id}`, { status }),

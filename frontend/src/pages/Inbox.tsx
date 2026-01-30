@@ -35,12 +35,12 @@ const Inbox = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [sortBy]);
 
     const fetchEmails = async () => {
         setLoading(true);
         try {
-            const res = await inboxApi.getAll();
+            const res = await inboxApi.getAll(sortBy);
             setEmails(res.data);
         } catch (err) {
             console.error(err);
@@ -284,6 +284,13 @@ const Inbox = () => {
                                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-600 font-medium flex items-center gap-1">
                                                     <Flame size={10} />
                                                     URGENT
+                                                </span>
+                                            )}
+
+                                            {email.deadline_text && (
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-600 font-medium flex items-center gap-1">
+                                                    <Clock size={10} />
+                                                    {email.deadline_text}
                                                 </span>
                                             )}
 
