@@ -4,7 +4,9 @@ from backend.models import Email, Prompt, ActionItem, Draft, FollowUp
 from backend.services.llm_service import llm_service
 from backend.services.sentiment_service import analyze_sentiment
 from backend.services.dark_patterns_service import detect_dark_patterns
+from backend.services.dark_patterns_service import detect_dark_patterns
 from backend.services.followup_service import extract_followups
+from backend.services.inbox_service import predict_category
 
 def process_email(db: Session, email_id: str):
     email = db.query(Email).filter(Email.id == email_id).first()
@@ -121,7 +123,18 @@ Respond ONLY with the valid JSON object."""
                     pass
         
         # Default to "Err: Key" checking so we know if model missed the key
-        email.category = data.get("category", "Err: Missing Key")
+        llm_category = data.get("category", "Uncategorized")
+        email.category = llm_category
+
+        # ---------------------------------------------------------
+        # HYBRID AI: Override with Custom Model if available
+        # ---------------------------------------------------------
+        # This ensures the user's trained model (SVM) takes precedence for categorization
+        custom_category = predict_category(email.subject, email.body)
+        if custom_category and custom_category != "Uncategorized":
+            print(f"🤖 Agent: Overriding LLM ('{llm_category}') with Custom Model -> '{custom_category}'")
+            email.category = custom_category
+        # ---------------------------------------------------------
         
         # Populate Actions
         actions = data.get("action_items", [])
