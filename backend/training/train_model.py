@@ -46,7 +46,39 @@ def generate_dataset(n_samples=200):
             "text": f"Subject: You are a {random.choice(spam_keywords)}! Body: Click here to claim your reward immediately.",
             "label": "Spam"
         })
+    
+    # --- HELPER FUNCTIONS FOR CONSISTENCY ---
+    # We use functions to ensure the text structure is IDENTICAL for both clean and noisy data.
+    def get_work_text():
+        return f"Subject: {random.choice(work_keywords)} needed. Body: Review attached document."
+    def get_finance_text():
+        return f"Subject: {random.choice(finance_keywords)} processed. Body: Payment sent."
+    def get_travel_text():
+        return f"Subject: {random.choice(travel_keywords)} confirmed. Body: Trip details attached."
+    def get_spam_text():
+        return f"Subject: {random.choice(spam_keywords)} alert. Body: Click this link now."
+
+    # --- 1. Clean Data (95% of data) ---
+    for _ in range(int(n_samples * 0.95) // 4):
+        data.append({"text": get_work_text(), "label": "Work"})
+        data.append({"text": get_finance_text(), "label": "Finance"})
+        data.append({"text": get_travel_text(), "label": "Travel"})
+        data.append({"text": get_spam_text(), "label": "Spam"})
+
+    # ---------------------------------------------------------
+    # 2. HUMAN ERROR (Label Noise) - 5%
+    # ---------------------------------------------------------
+    # We iterate and intentionally assign WRONG labels to the EXACT SAME text structures generated above.
+    # This creates inevitable confusion.
+    
+    # Spam emails mislabeled as Work
+    for _ in range(int(n_samples * 0.025)):
+        data.append({"text": get_spam_text(), "label": "Work"}) # <-- The text is SPAM, but label is WORK
         
+    # Travel emails mislabeled as Finance
+    for _ in range(int(n_samples * 0.025)):
+        data.append({"text": get_travel_text(), "label": "Finance"}) # <-- The text is TRAVEL, but label is FINANCE
+
     return pd.DataFrame(data)
 
 # 2. Train Model

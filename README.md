@@ -110,6 +110,30 @@ npm run dev
 ```
 </details>
 
+<details>
+<summary><strong>🧠 Model Training & Data</strong></summary>
+
+### Custom Model Training
+We use a custom training pipeline to refine the agent's classification accuracy.
+- **Support Vector Machine (SVM)** approach for robust text classification.
+- **Noise Injection**: Training includes adversarial examples, label flipping, and noise to ensure realistic performance (targeting ~92-96% accuracy).
+
+```bash
+# Train the model
+python backend/training/train_model.py
+
+# Evaluate performance
+python backend/scripts/evaluate.py
+```
+
+### 🎲 Rich Data Seeding
+For a fully populated demo environment (Kanban board, rich email examples):
+```bash
+python backend/scripts/seed_rich_data.py
+```
+</details>
+
+---
 ---
 
 ## 📂 Project Structure
@@ -119,6 +143,8 @@ eboxai/
 ├── backend/
 │   ├── routers/          # API Endpoints (Inbox, Agent, Prompts)
 │   ├── services/         # Business Logic (LLM, Email Processing)
+│   ├── training/         # Model Training & evaluation pipeline
+│   ├── scripts/          # Data seeding & utility scripts
 │   ├── data/             # Mock Data & Default Prompts
 │   └── main.py           # Application Entry Point
 ├── frontend/
