@@ -130,10 +130,14 @@ Respond ONLY with the valid JSON object."""
         # HYBRID AI: Override with Custom Model if available
         # ---------------------------------------------------------
         # This ensures the user's trained model (SVM) takes precedence for categorization
-        custom_category = predict_category(email.subject, email.body)
         if custom_category and custom_category != "Uncategorized":
-            print(f"🤖 Agent: Overriding LLM ('{llm_category}') with Custom Model -> '{custom_category}'")
-            email.category = custom_category
+            # SAFETY CHECK: The custom model (SVM) might be over-aggressive (false positive Spam).
+            # If LLM is confident it's "Work", we should NOT let a simple SVM mark it as Spam.
+            if custom_category == "Spam" and "Work" in llm_category:
+                 print(f"⚠️ Agent: Custom model says 'Spam', but LLM says '{llm_category}'. SAFETY OVERRIDE -> Keeping LLM tag.")
+            else:
+                print(f"🤖 Agent: Overriding LLM ('{llm_category}') with Custom Model -> '{custom_category}'")
+                email.category = custom_category
         # ---------------------------------------------------------
         
         # Populate Actions
