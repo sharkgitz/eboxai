@@ -78,11 +78,8 @@ class LLMService:
         except Exception as e:
             error_msg = str(e)
             print(f"LLM Error ({self.provider}): {error_msg}")
-            
-            if "rate" in error_msg.lower() or "limit" in error_msg.lower():
-                return f"⚠️ Rate Limit: {error_msg}. Please wait and try again."
-            else:
-                return f"⚠️ LLM Error: {error_msg}"
+            # Re-raise so caller can use fallback logic
+            raise Exception(f"LLM failed: {error_msg}")
     
     def _call_groq(self, prompt: str, json_mode: bool) -> str:
         response = self.groq_client.chat.completions.create(
