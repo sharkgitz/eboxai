@@ -48,7 +48,7 @@ const Dashboard = () => {
             console.error("Analytics fetch failed", err);
             // Fallback mock data if API fails (to show UI structure)
             setAnalytics({
-                roi: { hours_saved: 12.5, money_saved: 625, hourly_rate: 50 },
+                roi: { hours_saved: 12.5, hourly_rate: 50 },
                 trust: { average_confidence: 94.2, hallucination_rate: 5.1, rag_usage: "100%" },
                 trends: { sentiment_velocity: "Stable", top_intent: "Data Sync" }
             });

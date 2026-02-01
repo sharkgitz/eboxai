@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    DollarSign, Clock, ShieldCheck, Activity,
+    Clock, ShieldCheck, Activity,
     ArrowUpRight, AlertTriangle
 } from 'lucide-react';
 
@@ -9,7 +9,6 @@ interface StatsGridProps {
     data: {
         roi: {
             hours_saved: number;
-            money_saved: number;
             hourly_rate: number;
         };
         trust: {
