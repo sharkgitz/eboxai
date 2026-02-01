@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    Clock, ShieldCheck, Activity,
+    ShieldCheck, Activity,
     ArrowUpRight, AlertTriangle
 } from 'lucide-react';
 
