@@ -164,8 +164,14 @@ Respond ONLY with the valid JSON object."""
 
     except Exception as e:
         print(f"Comprehensive analysis failed: {e}")
-        # DEBUG: Write error to category field
-        email.category = f"Err: {str(e)[:20]}" 
+        # GRACEFUL FALLBACK: Use custom model or default to 'General' instead of showing error
+        fallback_category = predict_category(email.subject, email.body)
+        if fallback_category and fallback_category != "Uncategorized":
+            email.category = fallback_category
+            print(f"⚠️ LLM failed, using custom model fallback: {fallback_category}")
+        else:
+            email.category = "General"
+            print(f"⚠️ LLM failed, defaulting to 'General'")
         email.sentiment = "neutral"
 
     db.commit()
