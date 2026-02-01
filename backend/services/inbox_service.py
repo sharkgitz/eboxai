@@ -1,5 +1,7 @@
 import json
 import os
+import joblib
+import pandas as pd
 from sqlalchemy.orm import Session
 from backend.models import Email, Prompt, FollowUp, ActionItem
 from backend.schemas import EmailCreate
@@ -8,6 +10,33 @@ from datetime import datetime, timedelta
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 MOCK_INBOX_PATH = os.path.join(DATA_DIR, "mock_inbox.json")
 DEFAULT_PROMPTS_PATH = os.path.join(DATA_DIR, "default_prompts.json")
+MODEL_PATH = os.path.join(DATA_DIR, "email_classifier.joblib")
+
+# Global Model Variable
+EMAIL_CLASSIFIER = None
+
+try:
+    if os.path.exists(MODEL_PATH):
+        print(f"Loading Custom Classifier from {MODEL_PATH}...")
+        EMAIL_CLASSIFIER = joblib.load(MODEL_PATH)
+        print("✅ Custom Classifier Loaded Successfully.")
+    else:
+        print("⚠️ Custom Classifier Model not found. Skpping local inference.")
+except Exception as e:
+    print(f"❌ Error loading custom model: {e}")
+
+def predict_category(subject: str, body: str) -> str:
+    """Uses the local Scikit-Learn model to predict email category."""
+    if EMAIL_CLASSIFIER:
+        try:
+            # Prepare text exactly as training data: "Subject: ... Body: ..."
+            text = f"Subject: {subject}. Body: {body}"
+            prediction = EMAIL_CLASSIFIER.predict([text])[0]
+            return prediction
+        except Exception as e:
+            print(f"Inference Error: {e}")
+            return "Uncategorized"
+    return "Uncategorized"
 
 def load_mock_data(db: Session):
     print(f"Attempting to load mock data from: {MOCK_INBOX_PATH}")
@@ -44,6 +73,15 @@ def load_mock_data(db: Session):
                     email_data.setdefault("dark_patterns", "[]")  # JSON string
                     email_data.setdefault("dark_pattern_severity", "low")
                     
+                    # ---------------------------------------------------------
+                    # HYBRID AI: Use Local Model for Sorting
+                    # ---------------------------------------------------------
+                    if EMAIL_CLASSIFIER:
+                        predicted_cat = predict_category(email_data["subject"], email_data["body"])
+                        email_data["category"] = predicted_cat
+                        print(f"🤖 Model Classified: '{email_data['subject'][:20]}...' -> {predicted_cat}")
+                    # ---------------------------------------------------------
+
                     db_email = Email(**email_data)
                     db.add(db_email)
             db.commit()
