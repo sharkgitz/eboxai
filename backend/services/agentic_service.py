@@ -90,10 +90,11 @@ class AgenticExecutor:
                 auto_executable=True
             ))
         
-        # Check for task extraction
+        # Check for task extraction (LIMIT to first 2 to avoid UI clutter)
+        task_count = 0
         if email.action_items and len(email.action_items) > 0:
             for item in email.action_items:
-                if item.status == "pending":
+                if item.status == "pending" and task_count < 2:
                     suggestions.append(SuggestedAction(
                         action_type=ActionType.CREATE_TASK,
                         description=f"Create task: {item.description[:50]}...",
@@ -106,6 +107,7 @@ class AgenticExecutor:
                         confidence=0.95,
                         auto_executable=True
                     ))
+                    task_count += 1
         
         # Check for urgent flagging
         if email.urgency_score and email.urgency_score >= 8:
