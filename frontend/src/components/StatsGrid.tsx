@@ -26,29 +26,8 @@ interface StatsGridProps {
 
 const StatsGrid: React.FC<StatsGridProps> = ({ data }) => {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {/* ROI Card */}
-            <motion.div
-                whileHover={{ y: -2 }}
-                className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm relative overflow-hidden group"
-                title="Monetary value of time saved by AI automation (calculated at $50/hr)."
-            >
-                <div className="absolute top-0 right-0 p-16 bg-emerald-50 rounded-bl-full -z-0 transition-all group-hover:scale-110" />
-                <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm font-medium text-slate-500">ROI Generated</span>
-                        <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-                            <DollarSign size={18} />
-                        </div>
-                    </div>
-                    <div className="text-3xl font-bold text-slate-800 mb-1">
-                        ${data.roi.money_saved.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-emerald-600 flex items-center gap-1 font-medium bg-emerald-50 w-fit px-2 py-0.5 rounded-full">
-                        <Clock size={12} /> {data.roi.hours_saved} hours saved
-                    </div>
-                </div>
-            </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+
 
             {/* TRUST SCORE */}
             <motion.div
