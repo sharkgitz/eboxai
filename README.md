@@ -63,6 +63,7 @@ Forget manual sorting. The agent reads and tags every email instantly:
 |-------|------------|------|
 | **Backend** | **Python, FastAPI** | High-performance async API with easy AI integration. |
 | **AI Engine** | **Google Gemini API** | State-of-the-art LLM for reasoning and generation. |
+| **Vector DB** | **Pinecone** | Fast semantic search via local sentence-transformers or Gemini. |
 | **Frontend** | **React, Vite** | Blazing fast, modern UI development. |
 | **Styling** | **Tailwind CSS** | Beautiful, responsive designs with "Linear-style" aesthetics. |
 | **Database** | **SQLite** | Zero-config, local, and fast. |
@@ -115,8 +116,8 @@ npm run dev
 
 ### Custom Model Training
 We use a custom training pipeline to refine the agent's classification accuracy.
-- **Support Vector Machine (SVM)** approach for robust text classification.
-- **Noise Injection**: Training includes adversarial examples, label flipping, and noise to ensure realistic performance (targeting ~92-96% accuracy).
+- **Advanced Ensemble Model**: An architecture combining TF-IDF + Logistic Regression and Random Forest.
+- **Semantic & Metadata Understanding**: Uses sender domain patterns, urgency signals, and semantic text features instead of just keyword matching to ensure high accuracy without requiring API calls.
 
 ```bash
 # Train the model
@@ -185,7 +186,7 @@ On platforms like Vercel/Render, the database starts empty. You need to seed it 
 - [x] **Agent Chat**: Context-aware Q&A with inbox data.
 - [x] **Advanced Analytics**: Mission Control Dashboard with live feed.
 - [x] **Meeting Prep**: AI-generated briefs and context.
-- [ ] **Real Email Integration**: Connect via IMAP/SMTP (Gmail, Outlook).
+- [x] **Real Email Integration**: Connect via Gmail API.
 - [ ] **Voice Commands**: Control your agent with voice.
 - [ ] **Multi-Agent Mode**: Specialized agents for different workflows (Sales, HR).
 
