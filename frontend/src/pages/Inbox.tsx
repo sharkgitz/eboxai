@@ -60,10 +60,7 @@ const Inbox = () => {
         }
     };
 
-    const loadInbox = async () => {
-        await inboxApi.load();
-        fetchEmails();
-    };
+
 
     const syncGmail = async () => {
         setSyncing(true);
