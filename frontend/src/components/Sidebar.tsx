@@ -122,21 +122,7 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            {/* Bottom Card */}
-            <div className="p-4">
-                <div className="bg-gradient-to-br from-brand-600 to-brand-700 rounded-2xl p-4 text-white">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Sparkles size={16} />
-                        <span className="text-sm font-semibold">AI Powered</span>
-                    </div>
-                    <p className="text-xs text-brand-100 mb-3">
-                        Your inbox is managed by Groq AI for lightning-fast responses.
-                    </p>
-                    <div className="text-xs font-mono text-brand-200 truncate">
-                        {apiUrl.replace('https://', '').replace('http://', '')}
-                    </div>
-                </div>
-            </div>
+
         </div>
     );
 };

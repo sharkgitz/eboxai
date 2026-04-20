@@ -6,6 +6,8 @@ from backend.database import get_db
 from backend.database import get_db, SessionLocal
 from backend.services import agent_service
 
+import time
+
 def run_process_email_background(email_id: str):
     """
     Wrapper to run process_email in a background task with its own DB session.
@@ -17,6 +19,27 @@ def run_process_email_background(email_id: str):
         agent_service.process_email(db, email_id)
     finally:
         db.close()
+
+
+def run_batch_process_background(email_ids: list):
+    """
+    Process multiple emails SEQUENTIALLY with a delay between each call.
+    This avoids hitting free-tier rate limits on Groq/Gemini during demos.
+    """
+    for i, email_id in enumerate(email_ids):
+        db = SessionLocal()
+        try:
+            agent_service.process_email(db, email_id)
+        except Exception as e:
+            # Log but don't crash the whole batch
+            print(f"Error processing {email_id}: {e}")
+        finally:
+            db.close()
+
+        # Throttle: wait 1.5s between API calls to respect rate limits
+        if i < len(email_ids) - 1:
+            time.sleep(1.5)
+
 
 router = APIRouter(
     prefix="/agent",
@@ -41,12 +64,13 @@ def process_email_endpoint(email_id: str, background_tasks: BackgroundTasks, db:
 
 @router.post("/process-all")
 def process_all_emails(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    # In a real app, this would be more robust. For now, just process first 20.
+    """Process all emails sequentially with throttling to avoid rate limits."""
     from backend.models import Email
     emails = db.query(Email).limit(20).all()
-    for email in emails:
-        background_tasks.add_task(run_process_email_background, email.id)
-    return {"message": "Batch processing started"}
+    email_ids = [email.id for email in emails]
+    # Single sequential background task instead of 20 concurrent ones
+    background_tasks.add_task(run_batch_process_background, email_ids)
+    return {"message": f"Batch processing started for {len(email_ids)} emails (sequential)"}
 
 @router.post("/chat")
 def chat(request: ChatRequest, db: Session = Depends(get_db)):

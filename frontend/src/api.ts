@@ -40,6 +40,8 @@ export interface Email {
     has_dark_patterns?: boolean;
     dark_patterns?: string[];
     dark_pattern_severity?: string;
+    // Confidence from classifier
+    confidence_score?: number;
 }
 
 export interface EmailDetail extends Email {
@@ -47,8 +49,29 @@ export interface EmailDetail extends Email {
     drafts: Draft[];
 }
 
+// Prompt types for CRUD operations
+export interface PromptCreate {
+    name: string;
+    template: string;
+    prompt_type: string;
+}
+
+export interface PromptUpdate {
+    name?: string;
+    template?: string;
+    prompt_type?: string;
+}
+
+export interface Prompt {
+    id: number;
+    name: string;
+    template: string;
+    prompt_type: string;
+}
+
 export const inboxApi = {
     load: () => api.post('/inbox/load'),
+    syncGmail: () => api.post('/inbox/sync-gmail'),
     getAll: (sortBy: 'date' | 'priority' = 'date') => api.get<Email[]>(`/inbox/?sort_by=${sortBy}`),
     getOne: (id: string) => api.get<EmailDetail>(`/inbox/${id}`),
     delete: (id: string) => api.delete(`/inbox/${id}`),
@@ -67,9 +90,9 @@ export const agentApi = {
 };
 
 export const promptsApi = {
-    getAll: () => api.get('/prompts/'),
-    create: (data: any) => api.post('/prompts/', data),
-    update: (id: number, data: any) => api.put(`/prompts/${id}`, data),
+    getAll: () => api.get<Prompt[]>('/prompts/'),
+    create: (data: PromptCreate) => api.post<Prompt>('/prompts/', data),
+    update: (id: number, data: PromptUpdate) => api.put<Prompt>(`/prompts/${id}`, data),
 };
 
 export const playgroundApi = {
@@ -88,6 +111,6 @@ export const followupsApi = {
 
 export const agenticApi = {
     getActions: (emailId: string) => api.get(`/agent/actions/${emailId}`),
-    executeAction: (actionType: string, params: any) => api.post('/agent/execute', { action_type: actionType, params }),
+    executeAction: (actionType: string, params: Record<string, unknown>) => api.post('/agent/execute', { action_type: actionType, params }),
     smartReply: (emailId: string, intent: string) => api.post('/agent/smart-reply', { email_id: emailId, intent }),
 };

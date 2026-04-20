@@ -1,8 +1,14 @@
-
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
+from pathlib import Path
+import os
 
-DB_PATH = "C:\\Users\\vaish\\eboxai\\email-agent\\backend\\email_agent_v2.db"
+# Use relative path for portability
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_BACKEND_DIR = _SCRIPT_DIR.parent
+_DEFAULT_DB_PATH = _BACKEND_DIR / "email_agent_v2.db"
+
+DB_PATH = os.getenv("DATABASE_PATH", str(_DEFAULT_DB_PATH))
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
@@ -12,7 +18,7 @@ Base = declarative_base()
 class ActionItem(Base):
     __tablename__ = "action_items"
     id = Column(Integer, primary_key=True, index=True)
-    email_id = Column(String, index=True) # Assuming ForeignKey constraint exists in schema but loose here
+    email_id = Column(String, index=True)
     description = Column(String)
     deadline = Column(String, nullable=True)
     status = Column(String, default="pending")

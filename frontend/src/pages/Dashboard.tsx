@@ -9,14 +9,29 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
-import {
-    BarChart, Bar, Tooltip, ResponsiveContainer, Cell, XAxis
-} from 'recharts';
+import { BarChart, Bar, Tooltip, ResponsiveContainer, Cell, XAxis } from 'recharts';
+
+// Analytics data structure from backend
+interface Analytics {
+    roi: {
+        hours_saved: number;
+        hourly_rate: number;
+    };
+    trust: {
+        average_confidence: number;
+        hallucination_rate: number;
+        rag_usage: string;
+    };
+    trends: {
+        sentiment_velocity: string;
+        top_intent: string;
+    };
+}
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [emails, setEmails] = useState<Email[]>([]);
-    const [analytics, setAnalytics] = useState<any>(null);
+    const [analytics, setAnalytics] = useState<Analytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [greeting, setGreeting] = useState('');

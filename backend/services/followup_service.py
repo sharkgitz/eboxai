@@ -38,13 +38,32 @@ If no commitments found, return empty array: []
         import json
         import re
         
-        # Find JSON array in response
-        json_match = re.search(r'\[.*\]', response, re.DOTALL)
-        if json_match:
-            followups = json.loads(json_match.group())
-            return followups if isinstance(followups, list) else []
-        else:
-            return []
+        text = response.strip()
+        
+        # Strip markdown code fences (```json ... ``` or ``` ... ```)
+        fence_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?\s*```', text, re.DOTALL)
+        if fence_match:
+            text = fence_match.group(1).strip()
+        
+        # Try direct parse first
+        try:
+            result = json.loads(text)
+            return result if isinstance(result, list) else []
+        except (json.JSONDecodeError, ValueError):
+            pass
+        
+        # Find outermost [ ... ] pair
+        first_bracket = text.find('[')
+        last_bracket = text.rfind(']')
+        if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+            try:
+                followups = json.loads(text[first_bracket:last_bracket + 1])
+                return followups if isinstance(followups, list) else []
+            except (json.JSONDecodeError, ValueError):
+                pass
+        
+        return []
     except Exception as e:
         print(f"Follow-up extraction error: {e}")
         return []
+

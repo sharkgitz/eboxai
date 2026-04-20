@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from backend.database import get_db
-from backend.services import inbox_service
+from backend.services import inbox_service, gmail_service
 from backend.schemas import Email, EmailDetail
 
 router = APIRouter(
@@ -18,6 +18,17 @@ def load_inbox(db: Session = Depends(get_db)):
     except Exception as e:
         import traceback
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/sync-gmail")
+def sync_gmail(db: Session = Depends(get_db)):
+    """Fetch unread emails from Gmail and save to database."""
+    try:
+        result = gmail_service.fetch_emails(db)
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=List[EmailDetail])

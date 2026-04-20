@@ -1,0 +1,207 @@
+import smtplib
+import os
+import time
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load credentials
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(env_path)
+
+GMAIL_EMAIL = os.getenv("GMAIL_EMAIL")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
+
+if not GMAIL_EMAIL or not GMAIL_APP_PASSWORD:
+    print("❌ Error: GMAIL_EMAIL or GMAIL_APP_PASSWORD not found in .env")
+    exit(1)
+
+# List of 30 highly realistic, authentic emails
+DEMO_EMAILS = [
+    {
+        "sender": "Sarah Jenkins <s.jenkins@techiq.io>",
+        "subject": "Urgent: Q4 Financial Review and Board Prep",
+        "body": "Hi team,\n\nI need the finalized Q4 financial reports by EOD tomorrow. This is absolutely critical for the upcoming board meeting on Thursday. The board is looking closely at our marketing spend versus ROI, so please ensure that section is detailed and accurate.\n\nAlso, David, can you prepare a quick 5-slide summary of the key takeaways? We want to keep the presentation concise but have the full numbers ready in the appendix.\n\nPlease prioritize this above all other running tasks. Let me know immediately if there are any blockers.\n\nBest,\nSarah"
+    },
+    {
+        "sender": "Infrastructure Alerts <alerts@aws.amazon.com>",
+        "subject": "Critical: High Latency Detected in US-East-1",
+        "body": "This is an automated alert from AWS CloudWatch.\n\nOver the last 45 minutes, we have detected a 300% spike in API latency across all services hosted in the US-East-1 region. Current average response time is exceeding 2500ms, which violates our SLA threshold of 200ms.\n\nInitial diagnostics suggest an issue with the primary RDS instance read replicas. The on-call engineering team has been paged. Please check the incident dashboard for real-time updates and mitigation steps.\n\nIncident ID: INC-848392\nSeverity: P0"
+    },
+    {
+        "sender": "Legal Dept <legal@company.com>",
+        "subject": "Action Required: Updated Non-Disclosure Agreement",
+        "body": "Dear Employee,\n\nAs part of our annual compliance review, we have updated the standard company Non-Disclosure Agreement (NDA) to reflect new intellectual property guidelines and remote work security policies.\n\nPlease review the attached document carefully. You are required to sign and acknowledge the updated terms by next Friday, October 20th. Failure to do so may result in temporary suspension of VPN access.\n\nIf you have any questions regarding the changes, please join the open Office Hours next Tuesday at 10 AM EST.\n\nThank you,\nLegal & Compliance Team"
+    },
+    {
+        "sender": "Michael Chen <m.chen@designco.net>",
+        "subject": "Re: Feedback on Project Phoenix Landing Page",
+        "body": "Hey everyone,\n\nThanks for the great feedback on the initial mockups for Project Phoenix. I definitely agree with the general consensus that the hero section feels a bit cluttered right now.\n\nBased on your notes, I'm going to make the following adjustments by tomorrow morning:\n1. Increase the negative space around the primary CTA button.\n2. Swap out the generic stock image for the custom illustrations the marketing team provided last week.\n3. Change the subheader font weight from bold to medium to improve readability.\n\nI'll push the updated Figma link once it's ready. Can we schedule a quick 15-minute sync tomorrow afternoon to give it a final review before sending it to the client?\n\nCheers,\nMike"
+    },
+    {
+        "sender": "The Daily AI <newsletter@thedailyai.com>",
+        "subject": "The AI Weekly: Agentic Workflows and 2024 Predictions",
+        "body": "Welcome back to The AI Weekly! This edition is packed with updates on the shift from theoretical LLMs to practical, agentic workflows.\n\nTop Stories:\n- The Rise of Autonomous Agents: Companies are moving beyond simple chatbots to orchestrate multi-agent systems that can plan, execute tools, and verify their own work.\n- Open Source Models Catching Up: The latest release of Llama 3 shows benchmarks closing the gap with proprietary giants. What does this mean for enterprise adoption?\n- Deep Dive: How Anthropic's new context window is changing RAG architectures.\n\nIn our tutorial section this week, we show you how to build a basic local agent using LangChain and a custom Python REPL tool. Don't miss it!\n\nRead the full issue on our website."
+    },
+    {
+        "sender": "GitHub Notifications <notifications@github.com>",
+        "subject": "[eboxai/email-agent] Run failed: Build and Test Pipeline",
+        "body": "Run failed for master (ab829f1) by username.\n\nWorkflow: Build and Test Pipeline\nRepository: eboxai/email-agent\nFailed Jobs:\n- Test Suite (Python 3.10) - Failed in 2m 45s\n\nError Summary:\nThere was 1 failing test in `backend/tests/test_agent.py`.\nThe mock LLM service returned an unexpected JSON schema during the classification fallback test. Specifically, the key 'confidence_score' was missing from the output vector.\n\nPlease review the logs for more details and push a fix. You can view the full run details at the repository."
+    },
+    {
+        "sender": "Emily Roberts <emily@friends.net>",
+        "subject": "Weekend Trip to Tahoe - Finalizing Details!",
+        "body": "Hey guys!\n\nI'm so excited for our cabin trip to Tahoe this weekend! I wanted to finalize a few details so we're all on the same page.\n\nI'm planning to leave the city around 3 PM on Friday to try and beat some of the traffic. Who wants to carpool with me? I have room for 3 more if we pack light. \n\nAlso, I'm making a grocery list. I'll grab the stuff for the spaghetti dinner on Friday night, plus coffee and eggs for breakfast. If anyone has specific dietary restrictions I forgot about, let me know, otherwise just bring whatever snacks and drinks you prefer.\n\nCan't wait to see everyone!\nEmily"
+    },
+    {
+        "sender": "HR Dept <hr-noreply@company.com>",
+        "subject": "Action Needed: Complete Your Open Enrollment",
+        "body": "This is a reminder that the annual Open Enrollment period for health, dental, and vision benefits closes in exactly 5 days.\n\nWe noticed that you have not yet logged into the portal to review or confirm your selections for the upcoming calendar year. Even if you plan to keep your current coverage, you must log in and explicitly confirm your choices.\n\nIf no action is taken by the deadline, your current coverage will default to the standard plan, and your HSA contributions will be reset to zero.\n\nPlease visit the HR Portal to complete your enrollment. If you have any questions, you can reply directly to this email."
+    },
+    {
+        "sender": "PayPal <service@intl.paypal.com>",
+        "subject": "Payment Received: $1,450.00 USD from Client LLC",
+        "body": "Hello,\n\nGreat news! Client LLC has sent you a payment of $1,450.00 USD for Invoice #2023-089.\n\nThe funds are now available in your PayPal balance. You can keep the money in your PayPal account to use for future purchases, or transfer it directly to your linked bank account.\n\nTransaction Details:\nTransaction ID: 9V839201L930284H\nDate: October 12, 2023\nAmount: $1,450.00 USD\n\nThank you for using PayPal for your business needs."
+    },
+    {
+        "sender": "Delta Airlines <reservations@delta.com>",
+        "subject": "Flight Confirmation: Your upcoming trip to SFO",
+        "body": "Your flight is confirmed!\n\nThank you for booking with Delta Airlines. Below is your detailed itinerary for your upcoming trip to San Francisco (SFO).\n\nConfirmation Code: ABC99Z\n\nDeparture:\nFlight DL849 - New York (JFK) to San Francisco (SFO)\nDate: November 14, 2023\nTime: 8:30 AM EST\nSeat: 14A (Main Cabin)\n\nCheck-in opens 24 hours prior to departure. We recommend arriving at the airport at least 2 hours before your domestic flight to allow time for security screening.\n\nSafe travels!"
+    },
+    {
+        "sender": "Lottery Winner <info@global-rewards.net>",
+        "subject": "CONGRATULATIONS! You have been selected as a WINNER!!!",
+        "body": "Dear Lucky Winner,\n\nWe are thrilled to inform you that your email address was selected in our annual Global Online Sweepstakes!\n\nYou have won a cash prize of $500,000 USD and a brand new Apple iPhone 15 Pro Max. This is not a drill! Your confirmation code is WIN-99281.\n\nTo claim your prize immediately, you must click the link below and provide your banking details so we can wire the funds securely.\n\nCLAIM YOUR PRIZE NOW >> [link removed]\n\nDo not share this email with anyone. You have 24 hours to claim your prize before it is forfeited to the next alternate winner."
+    },
+    {
+        "sender": "LinkedIn <invitations@linkedin.com>",
+        "subject": "Alex Johnson accepted your connection request",
+        "body": "Hi there,\n\nGood news! Alex Johnson (Senior Technical Recruiter at OpenAI) has accepted your invitation to connect on LinkedIn.\n\nYou can now see their updates in your feed, message them directly, and view their full professional network. People who recently connected with Alex also viewed roles in AI Engineering and Product Management.\n\nWhy not send Alex a message to say hello and start a conversation?\n\nView Alex's profile: https://linkedin.com/in/alex-johnson-mock\n\nBest,\nThe LinkedIn Team"
+    },
+    {
+        "sender": "Amazon Deals <promotions@amazon.com>",
+        "subject": "Prime Exclusive: 40% off Smart Home Devices",
+        "body": "Hello Prime Member,\n\nUpgrade your living space today with our exclusive, limited-time offers on smart home devices. For the next 48 hours, you can save up to 40% on top-rated products.\n\nFeatured Deals:\n- Echo Dot (5th Gen) with clock: Usually $59.99, now $34.99\n- Ring Video Doorbell Pro: Save $70 instantly\n- Philips Hue Starter Kit: 30% off with coupon code SMART30 at checkout.\n\nThese deals are only available while supplies last. Click here to shop the full event and discover more ways to automate your home.\n\nHappy Shopping,\nAmazon.com"
+    },
+    {
+        "sender": "David Smith <d.smith@marketing-pro.com>",
+        "subject": "Draft Review: Q3 Campaign Post-Mortem",
+        "body": "Hi team,\n\nI've put together the first draft of the post-mortem document for our Q3 \"Autumn Leaves\" campaign. Overall, the campaign performed well, exceeding our engagement targets by 15%, but we missed our conversion goal by about 3%.\n\nIn the document, I've outlined a few hypotheses for the conversion drop-off, specifically focusing on the checkout flow friction on mobile devices. \n\nBefore I share this with the wider executive team, I'd love your input. Can you please review the attached document and leave comments directly in the file by Wednesday afternoon? Specifically, I need the analytics team to verify the attribution model numbers on page 4.\n\nThanks,\nDavid"
+    },
+    {
+        "sender": "Morning Brew <newsletter@morningbrew.com>",
+        "subject": "Markets rally, inflation cools, and the return of office mandates",
+        "body": "Good morning!\n\nHere's what you need to know today to sound smart at the water cooler:\n\n1. Markets are breathing a sigh of relief. The latest CPI data showed inflation cooling faster than expected, prompting a massive rally in tech stocks. The S&P 500 closed up 2.1%.\n\n2. The Return to Office debate heats up again. Another major tech firm announced a strict 4-day-a-week in-office policy, tying badge swipes to performance reviews. Employees are predictably unhappy, but management insists it's necessary for \"collaboration velocity.\"\n\n3. SpaceX successfully lands another booster. In what is becoming routine, they successfully retrieved their heavy booster after a deep-space satellite deployment.\n\nGrab your coffee, it's going to be a busy Tuesday."
+    },
+    {
+        "sender": "Secure IT <admin@company-security.net>",
+        "subject": "MANDATORY: Update your system password immediately",
+        "body": "Dear User,\n\nOur security monitoring systems indicate that your corporate password will expire in 2 days. To maintain access to your email, VPN, and internal tools, you must reset your password immediately.\n\nPlease use the link below to access the secure password reset portal. Ensure your new password is at least 12 characters long and contains a mix of letters, numbers, and symbols.\n\n[RESET PASSWORD NOW]\n\nIf you do not reset your password, your account will be locked precisely at midnight on Thursday, and you will need to contact the Help Desk via phone to regain access.\n\nThank you for keeping our network secure."
+    },
+    {
+        "sender": "Chase Bank <alerts@chase.com>",
+        "subject": "Your monthly credit card statement is ready",
+        "body": "Your statement for the period ending October 18, 2023, is now available online.\n\nAccount ending in: 4920\nNew Balance: $3,245.88\nMinimum Payment Due: $55.00\nPayment Due Date: November 12, 2023\n\nTo view your full statement, including a breakdown of all transactions and rewards earned this period, please log in to your account securely via the Chase Mobile app or at chase.com.\n\nTo avoid late fees and interest charges, please ensure your payment is received by the due date. Need help? Call the number on the back of your card."
+    },
+    {
+        "sender": "Airbnb Reservations <automated@airbnb.com>",
+        "subject": "Pack your bags! Your trip to Austin is confirmed.",
+        "body": "You're all set!\n\nYour booking at 'Modern Downtown Condo with Skyline Views' is confirmed and fully paid. Your host, Jessica, is looking forward to welcoming you.\n\nCheck-in: Friday, Nov 3 (Anytime after 4:00 PM)\nCheck-out: Monday, Nov 6 (11:00 AM)\n\nGetting there:\nJessica has provided detailed instructions on how to access the lockbox in the app. The address is 123 Congress Ave, Unit 4B, Austin, TX 78701.\n\nHouse Rules strictly prohibit parties and smoking. Please respect the neighbors.\n\nEnjoy your trip to Austin!"
+    },
+    {
+        "sender": "Alex <alex@personal.com>",
+        "subject": "Dinner reservations for Friday?",
+        "body": "Hey!\n\nIt's been forever since we caught up. Are we still on for dinner this Friday? I was thinking we could try that new Italian place that opened up downtown, 'Trattoria Bella'. I've heard their homemade pasta is amazing.\n\nThey don't take reservations for small parties, so we might have to wait a bit if we go right at 7 PM. Let me know what time works best for you and if you're good with Italian. \n\nAlso, remind me to give you back that book I borrowed! It was a great read.\n\nSee ya,\nAlex"
+    },
+    {
+        "sender": "Crypto Exchange <noreply@binance.com>",
+        "subject": "Login Attempt from New IP Address",
+        "body": "We noticed a successful login to your account from an unrecognized device or location.\n\nTime: 2023-10-20 14:32:05 UTC\nIP Address: 192.168.1.155\nLocation: Kyiv, Ukraine\nDevice: Chrome on Windows 10\n\nIf this was you, you can safely ignore this email. \n\nIf you do not recognize this activity, your account may be compromised. Please click the link below immediately to freeze your account and reset your security credentials.\n\n[FREEZE ACCOUNT]\n\nSecurity Team"
+    },
+    {
+        "sender": "Elena Rodriguez <e.rodriguez@sales.co>",
+        "subject": "Update on the Enterprise Deal - Contract Sent",
+        "body": "Hi everyone,\n\nGreat news! I just got off the phone with the procurement team at Global Corp, and they have verbally agreed to our revised pricing structure for the Enterprise tier.\n\nI have officially sent over the finalized contract via DocuSign. They said their legal counsel will need about 24-48 hours to review the redlines, but they don't anticipate any further pushback on the core terms.\n\nIf all goes well, we should have this signed by Friday, which means we'll hit our Q3 quota with a few days to spare. I'll keep the channel updated as soon as I get the notification that it's been signed.\n\nFingers crossed!\nElena"
+    },
+    {
+        "sender": "Medium Daily Digest <noreply@medium.com>",
+        "subject": "3 stories for you: Microservices are dead, long live monoliths",
+        "body": "Today's highlights tailored for you:\n\n1. Microservices are dead, long live monoliths (12 min read)\nWhy top engineering teams are moving away from complex microservice architectures and returning to well-structured modular monoliths for better performance and easier debugging.\n\n2. The 10 rules of effective 1-on-1s (8 min read)\nStop wasting time giving status updates. A guide for managers and ICs on how to make 1-on-1 meetings truly productive and focus on career growth.\n\n3. I built an AI agent in 24 hours. Here's what I learned. (15 min read)\nA practical tutorial on combining LLMs with external tools to create an autonomous agent that manages an entire email inbox.\n\nRead these and more on Medium."
+    },
+    {
+        "sender": "Dr. Smith's Office <appointments@citymedical.com>",
+        "subject": "Appointment Confirmation: Annual Physical",
+        "body": "Dear Patient,\n\nThis email is to confirm your upcoming appointment with Dr. Alan Smith.\n\nAppointment Details:\nType: Annual Physical Examination\nDate: Wednesday, October 25\nTime: 9:00 AM\nLocation: 400 Medical Center Blvd, Suite 200\n\nPlease arrive 15 minutes early to complete any necessary paperwork. If you need to cancel or reschedule, please call our office at least 24 hours in advance to avoid a cancellation fee.\n\nRemember to fast for 12 hours prior to your blood work.\n\nThank you,\nCity Medical Group"
+    },
+    {
+        "sender": "Discount SEO <sales@rank-number-one.net>",
+        "subject": "Guarantee First Page of Google in 30 Days",
+        "body": "Hello Website Owner,\n\nWe noticed that your website is currently not ranking on the first page of Google for your main keywords. You are losing thousands of potential customers to your competitors every single day.\n\nOur team of SEO experts has a proprietary method to guarantee your site reaches the #1 spot in just 30 days! We build thousands of high-quality backlinks automatically.\n\nFor a limited time, we are offering our premium package for just $99 (normally $1,999). \n\nReply to this email with YES to secure your spot today before we offer this to your competitors.\n\nRegards,\nThe SEO Masters"
+    },
+    {
+        "sender": "Netflix <info@mailer.netflix.com>",
+        "subject": "Recently added: The New Season of Stranger Things",
+        "body": "The wait is over.\n\nThe highly anticipated final season of Stranger Things is now streaming globally. Head back to Hawkins one last time to see how the epic saga concludes.\n\nAll 8 episodes are available right now. Grab your snacks, turn off the lights, and start binge-watching. \n\nAlso trending this week for you:\n- The Crown (Season 6)\n- Glass Onion: A Knives Out Mystery\n- Our Great National Parks\n\nLog in now to your account to start watching."
+    },
+    {
+        "sender": "Uber Receipts <receipts@uber.com>",
+        "subject": "Your Monday morning trip with Uber",
+        "body": "Here's your receipt for your ride, Vaish.\n\nTotal: $24.52\n\nOctober 16, 2023\nUberX\nDriver: Kevin\nLicense Plate: XY928B\n\nRoute:\n8:15 AM - Picked up at 123 Main St, Apartment 4B\n8:42 AM - Dropped off at 400 Corporate Blvd, Tech Park\n\nYou rode with Kevin. Your driver earned $18.50 from this trip. You can rate your trip or tip your driver in the app.\n\nThanks for riding with Uber."
+    },
+    {
+        "sender": "Kevin from IT <k.miller@company.com>",
+        "subject": "Software License Renewals due this week",
+        "body": "Hi team,\n\nJust a quick heads up that our enterprise licenses for several key software tools (including Adobe Creative Cloud and JetBrains IDEs) are up for renewal this Friday.\n\nIf you actively use these tools, no action is needed on your part. However, if you have a license assigned to you but haven't used the software in the last 90 days, please reply to this email so we can reallocate the seat to someone on the waiting list and save the company some money.\n\nAlso, a reminder that the migration to the new zero-trust VPN client is mandatory by end of month. Please follow the instructions on the wiki to install the new agent.\n\nThanks,\nKevin"
+    },
+    {
+        "sender": "Stripe Payments <support@stripe.com>",
+        "subject": "Action needed: Verify your business information",
+        "body": "Hello,\n\nTo ensure uninterrupted service and compliance with recent financial regulations, we need you to review and verify your business information on file.\n\nPlease log in to your Stripe Dashboard and navigate to the Settings > Business Details page. You will need to re-confirm your current business address, primary contact number, and upload a recent statement for your connected payout bank account.\n\nPlease complete this verification by November 1st. Failure to do so may result in a temporary hold on your daily payouts until the information is provided.\n\nThank you for your prompt attention to this matter.\nStripe Risk & Compliance"
+    },
+    {
+        "sender": "Eventbrite <orders@eventbrite.com>",
+        "subject": "Tickets: ReactConf 2024",
+        "body": "Hi there,\n\nYou're going to ReactConf 2024! \n\nYour order has been confirmed successfully. Attached to this email is a PDF containing your digital tickets and QR codes. Please have these ready on your phone when you reach the registration desk at the venue.\n\nEvent Details:\nDate: May 15-16, 2024\nTime: Doors open at 8:00 AM\nLocation: Convention Center, Las Vegas, NV\n\nA full schedule of speakers and workshops will be emailed to you two weeks prior to the event. We look forward to seeing you there!\n\nOrder #EB-92837494"
+    },
+    {
+        "sender": "Sarah Jenkins <s.jenkins@techiq.io>",
+        "subject": "Re: Quick question about the API docs",
+        "body": "Thanks for flagging that typo in the authentication section of the documentation. You're completely right, the endpoint should be `/v2/oauth`, not `/v1`.\n\nI just merged a quick PR to fix it on the staging site. It should deploy to production in the next 15 minutes.\n\nAlso, did you have a chance to look at the rate limiting ticket (#402)? The mobile team is complaining that they're hitting the threshold during peak hours. Let's sync on that tomorrow during our 1:1.\n\nBest,\nSarah"
+    }
+]
+
+def send_email(sender_name_email, subject, body, index):
+    """Send an email from self to self, but spoofs the 'From' header for UI appearance."""
+    msg = MIMEMultipart()
+    msg['From'] = sender_name_email
+    msg['To'] = GMAIL_EMAIL  # Sending to self
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(GMAIL_EMAIL, GMAIL_APP_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"❌ Failed to send '{subject}': {e}")
+        return False
+
+def main():
+    print(f"🚀 Starting Guaranteed Authentic Gmail Seeding for {GMAIL_EMAIL}...")
+    
+    sent_count = 0
+    total = len(DEMO_EMAILS)
+    
+    for i, e in enumerate(DEMO_EMAILS):
+        print(f"📩 Sending ({i+1}/{total}): {e['subject']}...", end="\r")
+        if send_email(e['sender'], e['subject'], e['body'], i):
+            sent_count += 1
+        time.sleep(1) # Safety delay
+        
+    print(f"\n🎉 Finished! Successfully sent {sent_count} AUTHENTIC emails to {GMAIL_EMAIL}.")
+    print("💡 These will appear as 'Unread' and will look very legit in the eBoxAI drawer.")
+
+if __name__ == "__main__":
+    main()

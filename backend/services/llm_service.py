@@ -3,25 +3,23 @@ import json
 import re
 from dotenv import load_dotenv
 from pathlib import Path
+from backend.logger import get_logger
 
-print("Loading LLM Service...")
+logger = get_logger(__name__)
+
+# Load environment variables
 try:
     env_path = Path(__file__).resolve().parent.parent / '.env'
-    print(f"Loading .env from: {env_path}")
-    
     if env_path.exists():
-        with open(env_path, 'r') as f:
-            for line in f:
-                if line.strip() and not line.startswith('#'):
-                    key, value = line.strip().split('=', 1)
-                    os.environ[key] = value
-                    print(f"Set {key} manually.")
+        load_dotenv(env_path)
+        logger.info(f"Loaded environment from {env_path}")
     else:
-        print(".env file not found!")
+        logger.warning(".env file not found, using system environment")
 except Exception as e:
-    print(f"Env loading error: {e}")
+    logger.error(f"Environment loading error: {e}")
 
 from backend.services.pii_service import pii_service
+
 
 class LLMService:
     def __init__(self):
@@ -39,9 +37,9 @@ class LLMService:
                 self.groq_client = Groq(api_key=self.groq_key)
                 self.provider = "groq"
                 self.is_mock = False
-                print("LLM Provider: Groq (Llama 3.3 70B)")
+                logger.info("LLM Provider: Groq (Llama 3.3 70B)")
             except ImportError:
-                print("Groq package not installed, trying Gemini...")
+                logger.warning("Groq package not installed, trying Gemini...")
         
         # Fallback to Gemini
         if not self.provider and self.gemini_key:
@@ -51,19 +49,20 @@ class LLMService:
                 self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-lite')
                 self.provider = "gemini"
                 self.is_mock = False
-                print("LLM Provider: Gemini (2.0-flash-lite)")
+                logger.info("LLM Provider: Gemini (2.0-flash-lite)")
             except Exception as e:
-                print(f"Gemini init error: {e}")
+                logger.error(f"Gemini init error: {e}")
         
         if self.is_mock:
-            print("Warning: No LLM API keys found. Using Mock LLM.")
+            logger.warning("No LLM API keys found. Using Mock LLM.")
     
-    # For /status endpoint compatibility
     @property
     def api_key(self):
+        """For /status endpoint compatibility."""
         return self.groq_key or self.gemini_key
 
     def generate_text(self, prompt: str, json_mode: bool = False) -> str:
+        """Generate text using the configured LLM provider."""
         # Redact PII from prompt for safety
         safe_prompt = pii_service.redact(prompt)
         
@@ -77,8 +76,7 @@ class LLMService:
                 return self._call_gemini(safe_prompt, json_mode)
         except Exception as e:
             error_msg = str(e)
-            print(f"LLM Error ({self.provider}): {error_msg}")
-            # Re-raise so caller can use fallback logic
+            logger.error(f"LLM Error ({self.provider}): {error_msg}")
             raise Exception(f"LLM failed: {error_msg}")
     
     def _call_groq(self, prompt: str, json_mode: bool) -> str:
@@ -104,8 +102,7 @@ class LLMService:
         return response.text
 
     def _mock_response(self, prompt: str) -> str:
-        # Simple heuristic mock responses for demo
-
+        """Simple heuristic mock responses for demo when no API keys are configured."""
         if "Analyze this email" in prompt or "Categorize" in prompt:
             subject_match = re.search(r"Subject: (.*)", prompt)
             body_match = re.search(r"Body: (.*?)(\nReturn a single JSON|\n\nReturn)", prompt, re.DOTALL)
@@ -160,5 +157,6 @@ class LLMService:
             return '[{"commitment": "Send report", "committed_by": "me", "due_date": "Friday"}]'
 
         return "I am a mock agent. (Reason: No API keys configured)"
+
 
 llm_service = LLMService()

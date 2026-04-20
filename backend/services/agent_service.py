@@ -4,48 +4,141 @@ from backend.models import Email, Prompt, ActionItem, Draft, FollowUp
 from backend.services.llm_service import llm_service
 from backend.services.sentiment_service import analyze_sentiment
 from backend.services.dark_patterns_service import detect_dark_patterns
-from backend.services.dark_patterns_service import detect_dark_patterns
 from backend.services.followup_service import extract_followups
 from backend.services.inbox_service import predict_category
+from backend.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+def _parse_llm_json(response: str) -> dict:
+    """
+    Robustly parse JSON from an LLM response.
+    Handles markdown code fences, conversational filler, and partial JSON.
+    """
+    import re
+
+    if not response or not response.strip():
+        return {}
+
+    text = response.strip()
+
+    # Step 1: Strip markdown code fences (```json ... ``` or ``` ... ```)
+    fence_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?\s*```', text, re.DOTALL)
+    if fence_match:
+        text = fence_match.group(1).strip()
+
+    # Step 2: Try direct parse
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # Step 3: Find the outermost { ... } pair
+    first_brace = text.find('{')
+    last_brace = text.rfind('}')
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        try:
+            return json.loads(text[first_brace:last_brace + 1])
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    return {}
+
+
+def _parse_llm_json_array(response: str) -> list:
+    """
+    Robustly parse a JSON array from an LLM response.
+    Handles markdown code fences and conversational filler.
+    """
+    import re
+
+    if not response or not response.strip():
+        return []
+
+    text = response.strip()
+
+    # Step 1: Strip markdown code fences
+    fence_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?\s*```', text, re.DOTALL)
+    if fence_match:
+        text = fence_match.group(1).strip()
+
+    # Step 2: Try direct parse
+    try:
+        result = json.loads(text)
+        return result if isinstance(result, list) else []
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # Step 3: Find the outermost [ ... ] pair
+    first_bracket = text.find('[')
+    last_bracket = text.rfind(']')
+    if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+        try:
+            result = json.loads(text[first_bracket:last_bracket + 1])
+            return result if isinstance(result, list) else []
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    return []
 
 def process_email(db: Session, email_id: str):
+    """
+    Process an email using hybrid AI:
+    1. Local classifier for categorization (fast, no API calls)
+    2. LLM for complex tasks: action items, followups, deadline extraction
+    """
     email = db.query(Email).filter(Email.id == email_id).first()
     if not email:
-        print(f"ProcessEmail: Email {email_id} not found")
+        logger.warning(f"Email {email_id} not found")
         return None
 
-    # TRACE: Set status immediately to prove task is running
-    print(f"ProcessEmail: Starting analysis for {email_id}")
+    logger.info(f"Processing email {email_id}")
     email.category = "Analyzing..."
     try:
         db.commit()
     except Exception as e:
-        print(f"ProcessEmail: Failed to commit initial status: {e}")
+        logger.error(f"Failed to commit initial status: {e}")
         db.rollback()
 
-    # 1. Dark Patterns Detection (Regex-based, free, keep separate)
+    # =========================================================
+    # STEP 1: LOCAL CLASSIFIER (fast, no API calls)
+    # =========================================================
+    category, confidence = predict_category(
+        email.subject, 
+        email.body, 
+        email.sender
+    )
+    email.category = category
+    email.confidence_score = confidence
+    logger.info(f"🤖 Classified: {category} ({confidence:.0%})")
+
+    # =========================================================
+    # STEP 2: DARK PATTERNS DETECTION (regex-based, free)
+    # =========================================================
     dark_patterns_result = detect_dark_patterns(email.subject, email.body)
     email.has_dark_patterns = dark_patterns_result.get("has_dark_patterns", False)
     email.dark_patterns = json.dumps(dark_patterns_result.get("patterns_found", []))
     email.dark_pattern_severity = dark_patterns_result.get("severity", "low")
 
-    # 2. Comprehensive LLM Analysis (Consolidating 4 calls into 1)
-    # Combined prompt for Sentiment, Category, Actions, Followups, and Deadline
-    prompt_text = f"""Analyze this email and provide a comprehensive JSON response.
+    # =========================================================
+    # STEP 3: LLM ANALYSIS (only for complex extraction tasks)
+    # Classification is already done - LLM only extracts metadata
+    # =========================================================
+    prompt_text = f"""Analyze this email and extract structured information.
 
 Subject: {email.subject}
 From: {email.sender}
 Body: {email.body}
 
-Return a single JSON object with the following structure:
+Return a JSON object with ONLY the following (category is already determined):
 {{
-    "category": "Work: Important" | "Work: Routine" | "Personal" | "Spam" | "Newsletter" | "Finance" | "Travel" | "Social" | "Promotions" | "General",
-    "category_reasoning": "Short explanation of why this category was chosen",
     "urgency_score": 1-10 (10 being most urgent),
+    "sentiment": "positive" | "negative" | "neutral" | "urgent",
     "deadline": {{
         "has_deadline": true/false,
-        "deadline_text": "original text like 'by 5 PM today' or 'before Friday' or null",
-        "deadline_iso": "ISO 8601 datetime string or null (e.g., '2026-01-30T17:00:00')"
+        "deadline_text": "original text like 'by 5 PM today' or null",
+        "deadline_iso": "ISO 8601 datetime or null"
     }},
     "action_items": [
         {{ "description": "task description", "deadline": "date or null" }}
@@ -55,17 +148,6 @@ Return a single JSON object with the following structure:
     ]
 }}
 
-Classification Guidelines:
-- "Work: Important": Direct requests from boss/colleagues, project updates, meeting invites.
-- "Work: Routine": Automated system notifications, generic HR announcements, low priority.
-- "Finance": Bills, receipts, bank notifications, salary.
-- "Travel": Flight confirmations, hotel bookings, ride share receipts.
-- "Newsletter": News digests, substack, marketing emails from known brands.
-- "Spam": Unsolicited offers, phishing attempts, lottery wins.
-- "Social": LinkedIn notifications, Facebook/Twitter updates.
-- "Promotions": Sales, discounts, limited time offers.
-- "General": Use this if NO other category fits.
-
 Urgency Guidelines:
 - 10: Explicit deadline within 2 hours or ASAP
 - 8-9: Deadline today or tomorrow
@@ -73,44 +155,23 @@ Urgency Guidelines:
 - 4-5: No explicit deadline but action required
 - 1-3: Informational, no action needed
 
-IMPORTANT: You MUST choose one of the categories above. Do NOT use "Uncategorized".
-Look for temporal phrases like "need this by", "deadline is", "before EOD", "ASAP", "urgent", etc.
-
-Respond ONLY with the valid JSON object."""
+Respond ONLY with valid JSON."""
 
     try:
         response = llm_service.generate_text(prompt_text, json_mode=True)
         
-        # DEBUG: Log response to file
-        try:
-            with open("debug_response.log", "a", encoding="utf-8") as f:
-                f.write(f"\n--- RESPONSE ---\n{response}\n----------------\n")
-        except:
-            pass
-        
-        # Try direct JSON parse first (JSON mode should be clean)
-        data = {}
-        try:
-            data = json.loads(response)
-        except:
-            # Fallback to regex if model added text around it
-            import re
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                try:
-                    data = json.loads(json_match.group())
-                except:
-                    pass
+        data = _parse_llm_json(response)
+
 
         if not data:
-            raise Exception("Empty/Invalid JSON")
+            raise Exception("Empty/Invalid JSON from LLM")
         
-        # Populate Email Fields
+        # Populate fields from LLM
         email.sentiment = data.get("sentiment", "neutral")
-        email.emotion = data.get("emotion", "neutral")
+        email.emotion = data.get("emotion", email.sentiment)
         email.urgency_score = data.get("urgency_score", 5)
         
-        # Extract Deadline Information
+        # Extract deadline
         deadline_data = data.get("deadline", {})
         if deadline_data and deadline_data.get("has_deadline"):
             email.deadline_text = deadline_data.get("deadline_text")
@@ -122,28 +183,8 @@ Respond ONLY with the valid JSON object."""
                 except:
                     pass
         
-        # Default to "Err: Key" checking so we know if model missed the key
-        llm_category = data.get("category", "Uncategorized")
-        email.category = llm_category
-
-        # ---------------------------------------------------------
-        # HYBRID AI: Override with Custom Model if available
-        # ---------------------------------------------------------
-        # This ensures the user's trained model (SVM) takes precedence for categorization
-        custom_category = predict_category(email.subject, email.body)
-        if custom_category and custom_category != "Uncategorized":
-            # SAFETY CHECK: The custom model (SVM) might be over-aggressive (false positive Spam).
-            # If LLM is confident it's "Work", we should NOT let a simple SVM mark it as Spam.
-            if custom_category == "Spam" and "Work" in llm_category:
-                 print(f"⚠️ Agent: Custom model says 'Spam', but LLM says '{llm_category}'. SAFETY OVERRIDE -> Keeping LLM tag.")
-            else:
-                print(f"🤖 Agent: Overriding LLM ('{llm_category}') with Custom Model -> '{custom_category}'")
-                email.category = custom_category
-        # ---------------------------------------------------------
-        
         # Populate Actions
-        actions = data.get("action_items", [])
-        for action in actions:
+        for action in data.get("action_items", []):
             db_action = ActionItem(
                 email_id=email.id,
                 description=action.get("description", "Unknown task"),
@@ -152,8 +193,7 @@ Respond ONLY with the valid JSON object."""
             db.add(db_action)
             
         # Populate Followups
-        followups = data.get("followups", [])
-        for followup in followups:
+        for followup in data.get("followups", []):
             db_followup = FollowUp(
                 email_id=email.id,
                 commitment=followup.get("commitment", ""),
@@ -163,21 +203,17 @@ Respond ONLY with the valid JSON object."""
             db.add(db_followup)
 
     except Exception as e:
-        print(f"Comprehensive analysis failed: {e}")
-        # GRACEFUL FALLBACK: Use custom model or default to 'General' instead of showing error
-        fallback_category = predict_category(email.subject, email.body)
-        if fallback_category and fallback_category != "Uncategorized":
-            email.category = fallback_category
-            print(f"⚠️ LLM failed, using custom model fallback: {fallback_category}")
-        else:
-            email.category = "General"
-            print(f"⚠️ LLM failed, defaulting to 'General'")
+        logger.warning(f"LLM extraction failed: {e}. Using classifier result only.")
+        # Category is already set by classifier, just set defaults
         email.sentiment = "neutral"
+        email.urgency_score = 5
 
     db.commit()
     return email
 
+
 def generate_draft(db: Session, email_id: str, instructions: str = None, tone: str = "professional", length: str = "concise"):
+    """Generate an AI draft reply to an email."""
     email = db.query(Email).filter(Email.id == email_id).first()
     if not email:
         return None
@@ -185,8 +221,6 @@ def generate_draft(db: Session, email_id: str, instructions: str = None, tone: s
     reply_prompt = db.query(Prompt).filter(Prompt.prompt_type == "reply").first()
     if reply_prompt:
         template = reply_prompt.template
-        
-        # Inject style guidelines
         template += f"\n\nStyle Guidelines:\n- Tone: {tone}\n- Length: {length}"
 
         if instructions:
@@ -205,29 +239,26 @@ def generate_draft(db: Session, email_id: str, instructions: str = None, tone: s
         return draft
     return None
 
+
 from backend.services.rag_service import rag_service
 
+
 def chat_agent(db: Session, query: str, email_id: str = None):
+    """Chat with the AI agent about emails."""
     context = ""
     if email_id:
         email = db.query(Email).filter(Email.id == email_id).first()
         if email:
             context = f"Context Email:\nSender: {email.sender}\nSubject: {email.subject}\nBody: {email.body}\n\n"
     else:
-        # RAG Search
-        # Use Pinecone to find relevant context
         relevant_emails = []
         
         if not rag_service.is_mock:
-            # Search Pinecone for relevant emails
             rag_results = rag_service.search(query, k=5)
-            # rag_results is list of metadata dicts, convert to pseudo Email objects for context
             for r in rag_results:
-                relevant_emails.append(type('Email', (), r)()) # Create simple object from dict
+                relevant_emails.append(type('Email', (), r)())
         
-        # Fallback: If RAG returns nothing (or query is generic "summarize"), fetch recent emails from DB
         if not relevant_emails or "summarize" in query.lower():
-            # Get recent emails if RAG failed or for summary queries
             relevant_emails = db.query(Email).order_by(Email.timestamp.desc()).limit(10).all()
         
         if relevant_emails:
@@ -236,9 +267,8 @@ def chat_agent(db: Session, query: str, email_id: str = None):
                 context += f"ID: {e.id}\nSender: {e.sender}\nSubject: {e.subject}\nDate: {e.timestamp}\nBody: {e.body[:300]}...\nCategory: {e.category}\n\n"
             context += "End of relevant emails.\n\n"
 
-    prompt = f"You are a helpful Email Productivity Agent. You have access to the user's emails provided in the context below.\n\nIMPORTANT: Format your response using Markdown. Use headers (##) for sections, bullet points (-) for lists, and bolding (**) for emphasis. Do not output a single block of text.\n\n{context}User Query: {query}\n\nAgent Response:"
+    prompt = f"You are a helpful Email Productivity Agent. You have access to the user's emails provided in the context below.\n\nIMPORTANT: Format your response using Markdown. Use headers (##) for sections, bullet points (-) for lists, and bolding (**) for emphasis.\n\n{context}User Query: {query}\n\nAgent Response:"
     
-    # ENHANCEMENT: Add Graph Context if query is about people or relationships
     if not email_id:
         from backend.services.graph_service import get_context_for_chat
         graph_context = get_context_for_chat(db, query)
@@ -254,8 +284,8 @@ EMAIL CONTEXT:
 USER QUERY:
 {query}
 
-IMPORTANT: Use the Relationship Context to provide personalized answers (e.g. knowing who is a VIP).
-Format your response using Markdown. Use headers (##) for sections, bullet points (-) for lists.
+IMPORTANT: Use the Relationship Context to provide personalized answers.
+Format your response using Markdown.
 Agent Response:"""
 
     return llm_service.generate_text(prompt)

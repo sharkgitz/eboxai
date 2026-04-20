@@ -30,6 +30,7 @@ const Inbox = () => {
     const [quickActions, setQuickActions] = useState<any[]>([]);
     const [smartReplyLoading, setSmartReplyLoading] = useState(false);
     const [filterUrgent, setFilterUrgent] = useState(false);
+    const [syncing, setSyncing] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -62,6 +63,18 @@ const Inbox = () => {
     const loadInbox = async () => {
         await inboxApi.load();
         fetchEmails();
+    };
+
+    const syncGmail = async () => {
+        setSyncing(true);
+        try {
+            await inboxApi.syncGmail();
+            await fetchEmails();
+        } catch (err) {
+            console.error("Gmail sync failed:", err);
+        } finally {
+            setSyncing(false);
+        }
     };
 
     const processAll = async () => {
@@ -222,8 +235,13 @@ const Inbox = () => {
                         </div>
                         <div className="flex gap-1">
                             <button
-                                onClick={loadInbox}
-                                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
+                                onClick={syncGmail}
+                                disabled={syncing}
+                                className={clsx(
+                                    "p-2 rounded-lg transition-colors flex items-center gap-2",
+                                    syncing ? "text-emerald-500 animate-spin" : "text-slate-500 hover:text-emerald-600 hover:bg-emerald-50"
+                                )}
+                                title="Sync Actual Gmail"
                             >
                                 <RefreshCw size={16} />
                             </button>

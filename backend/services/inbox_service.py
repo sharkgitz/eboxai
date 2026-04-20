@@ -1,50 +1,38 @@
 import json
 import os
-import joblib
 import pandas as pd
 from sqlalchemy.orm import Session
 from backend.models import Email, Prompt, FollowUp, ActionItem
 from backend.schemas import EmailCreate
+from backend.logger import get_logger
 from datetime import datetime, timedelta
+from pathlib import Path
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-MOCK_INBOX_PATH = os.path.join(DATA_DIR, "mock_inbox.json")
-DEFAULT_PROMPTS_PATH = os.path.join(DATA_DIR, "default_prompts.json")
-MODEL_PATH = os.path.join(DATA_DIR, "email_classifier.joblib")
+logger = get_logger(__name__)
 
-# Global Model Variable
-EMAIL_CLASSIFIER = None
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+MOCK_INBOX_PATH = DATA_DIR / "mock_inbox.json"
+DEFAULT_PROMPTS_PATH = DATA_DIR / "default_prompts.json"
 
-try:
-    if os.path.exists(MODEL_PATH):
-        print(f"Loading Custom Classifier from {MODEL_PATH}...")
-        EMAIL_CLASSIFIER = joblib.load(MODEL_PATH)
-        print("✅ Custom Classifier Loaded Successfully.")
-    else:
-        print("⚠️ Custom Classifier Model not found. Skpping local inference.")
-except Exception as e:
-    print(f"❌ Error loading custom model: {e}")
+# Import the new advanced classifier
+from backend.services.classifier_v2 import classifier, predict_category as _predict_v2
 
-def predict_category(subject: str, body: str) -> str:
-    """Uses the local Scikit-Learn model to predict email category."""
-    if EMAIL_CLASSIFIER:
-        try:
-            # Prepare text exactly as training data: "Subject: ... Body: ..."
-            text = f"Subject: {subject}. Body: {body}"
-            prediction = EMAIL_CLASSIFIER.predict([text])[0]
-            return prediction
-        except Exception as e:
-            print(f"Inference Error: {e}")
-            return "Uncategorized"
-    return "Uncategorized"
+
+def predict_category(subject: str, body: str, sender: str = "") -> tuple[str, float]:
+    """
+    Predict email category using the advanced classifier v2.
+    Returns (category, confidence) tuple.
+    """
+    return _predict_v2(subject, body, sender)
+
 
 def load_mock_data(db: Session):
-    print(f"Attempting to load mock data from: {MOCK_INBOX_PATH}")
+    logger.info(f"Attempting to load mock data from: {MOCK_INBOX_PATH}")
     
     # Load Emails
     if db.query(Email).count() == 0:
-        if os.path.exists(MOCK_INBOX_PATH):
-            print("Mock inbox file found. Loading...")
+        if MOCK_INBOX_PATH.exists():
+            logger.info("Mock inbox file found. Loading...")
             with open(MOCK_INBOX_PATH, "r") as f:
                 emails_data = json.load(f)
                 
@@ -53,13 +41,10 @@ def load_mock_data(db: Session):
                 
                 for i, email_data in enumerate(emails_data):
                     # Dynamic timestamp adjustment
-                    # Distribute emails over the last few days and some in the future for meetings
                     if "Meeting" in email_data["subject"]:
-                        # Meetings in the near future
                         offset = i % 3
                         email_time = base_time + timedelta(days=offset)
                     else:
-                        # Other emails in the past
                         offset = (i % 5) + 1
                         email_time = base_time - timedelta(days=offset)
                         
@@ -70,31 +55,34 @@ def load_mock_data(db: Session):
                     email_data.setdefault("emotion", "neutral")
                     email_data.setdefault("urgency_score", 5)
                     email_data.setdefault("has_dark_patterns", False)
-                    email_data.setdefault("dark_patterns", "[]")  # JSON string
+                    email_data.setdefault("dark_patterns", "[]")
                     email_data.setdefault("dark_pattern_severity", "low")
                     
-                    # ---------------------------------------------------------
-                    # HYBRID AI: Use Local Model for Sorting
-                    # ---------------------------------------------------------
-                    if EMAIL_CLASSIFIER:
-                        predicted_cat = predict_category(email_data["subject"], email_data["body"])
-                        email_data["category"] = predicted_cat
-                        print(f"🤖 Model Classified: '{email_data['subject'][:20]}...' -> {predicted_cat}")
-                    # ---------------------------------------------------------
+                    # -------------------------------------------------------
+                    # ADVANCED CLASSIFIER: Use local model for classification
+                    # -------------------------------------------------------
+                    category, confidence = predict_category(
+                        email_data["subject"], 
+                        email_data["body"],
+                        email_data.get("sender", "")
+                    )
+                    email_data["category"] = category
+                    email_data["confidence_score"] = confidence
+                    logger.info(f"🤖 Classified: '{email_data['subject'][:30]}...' -> {category} ({confidence:.0%})")
+                    # -------------------------------------------------------
 
                     db_email = Email(**email_data)
                     db.add(db_email)
             db.commit()
-            print("Emails loaded successfully.")
+            logger.info(f"Loaded {len(emails_data)} emails successfully.")
         else:
-            print(f"ERROR: Mock inbox file NOT found at {MOCK_INBOX_PATH}")
+            logger.error(f"Mock inbox file NOT found at {MOCK_INBOX_PATH}")
             raise FileNotFoundError(f"Mock inbox file not found at {MOCK_INBOX_PATH}")
     else:
-        print("Emails already exist in DB. Skipping email load.")
+        logger.info("Emails already exist in DB. Skipping email load.")
 
-    # Seed FollowUps and ActionItems if missing (even if emails exist)
+    # Seed FollowUps and ActionItems if missing
     if db.query(FollowUp).count() == 0:
-        # Find relevant emails
         q4_email = db.query(Email).filter(Email.subject.contains("Q4 Report")).first()
         sprint_email = db.query(Email).filter(Email.subject.contains("Sprint Planning")).first()
         
@@ -127,13 +115,14 @@ def load_mock_data(db: Session):
 
     # Load Prompts
     if db.query(Prompt).count() == 0:
-        if os.path.exists(DEFAULT_PROMPTS_PATH):
+        if DEFAULT_PROMPTS_PATH.exists():
             with open(DEFAULT_PROMPTS_PATH, "r") as f:
                 prompts_data = json.load(f)
                 for prompt_data in prompts_data:
                     db_prompt = Prompt(**prompt_data)
                     db.add(db_prompt)
             db.commit()
+
 
 def get_emails(db: Session, skip: int = 0, limit: int = 100, sort_by: str = "date"):
     """
@@ -143,32 +132,18 @@ def get_emails(db: Session, skip: int = 0, limit: int = 100, sort_by: str = "dat
     - "date": Sort by timestamp (default, newest first)
     - "priority": Smart priority sorting (urgency + deadline awareness)
     """
-    from sqlalchemy import case, func, desc, asc, nullslast
+    from sqlalchemy import case, desc, asc, nullslast
     
     query = db.query(Email)
     
     if sort_by == "priority":
-        # Priority scoring: Higher urgency_score first, then by deadline proximity
-        # Emails with deadlines coming up soon get higher priority
         now = datetime.utcnow()
         
-        # Create a composite priority score
-        # 1. Deadline within 24h = highest priority
-        # 2. High urgency_score (>= 7)
-        # 3. Unread emails
-        # 4. Then by deadline datetime (nulls last)
-        # 5. Finally by timestamp
-        
         priority_case = case(
-            # Emails with imminent deadlines (within 24h)
             (Email.deadline_datetime.isnot(None) & (Email.deadline_datetime <= now + timedelta(hours=24)), 100),
-            # High urgency
             (Email.urgency_score >= 8, 80),
-            # Medium-high urgency
             (Email.urgency_score >= 6, 60),
-            # Has deadline but further out
             (Email.deadline_datetime.isnot(None), 40),
-            # Unread
             (Email.is_read == False, 30),
             else_=10
         )
@@ -180,10 +155,10 @@ def get_emails(db: Session, skip: int = 0, limit: int = 100, sort_by: str = "dat
             desc(Email.timestamp)
         )
     else:
-        # Default: sort by date (newest first)
         query = query.order_by(desc(Email.timestamp))
     
     return query.offset(skip).limit(limit).all()
+
 
 def get_email(db: Session, email_id: str):
     return db.query(Email).filter(Email.id == email_id).first()
