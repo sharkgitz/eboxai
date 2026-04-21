@@ -7,6 +7,7 @@
 ![Python](https://img.shields.io/badge/python-v3.9+-blue.svg?style=for-the-badge&logo=python)
 ![React](https://img.shields.io/badge/react-v18+-61DAFB.svg?style=for-the-badge&logo=react)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![CI](https://img.shields.io/github/actions/workflow/status/sharkgitz/eboxai/test.yml?branch=main&label=CI&style=for-the-badge)
 
 <br />
 
@@ -28,6 +29,7 @@ Categorize, summarize, and draft replies automatically—all controlled by your 
 - *Tell it to be formal with clients.*
 - *Tell it to be brief with internal updates.*
 - *Tell it to ignore "limited time offers".*
+- **Prompt Playground**: Test and iterate on your prompts in real-time against actual emails before activating them.
 
 ### 🏷️ **Smart Categorization**
 Forget manual sorting. The agent reads and tags every email instantly:
@@ -114,10 +116,11 @@ npm run dev
 <details>
 <summary><strong>🧠 Model Training & Data</strong></summary>
 
-### Custom Model Training
+### Custom Model Training & Benchmarking
 We use a custom training pipeline to refine the agent's classification accuracy.
-- **Advanced Ensemble Model**: An architecture combining TF-IDF + Logistic Regression and Random Forest.
+- **V2 Advanced Ensemble Model**: An architecture combining TF-IDF + Logistic Regression and Random Forest achieving >95% accuracy.
 - **Semantic & Metadata Understanding**: Uses sender domain patterns, urgency signals, and semantic text features instead of just keyword matching to ensure high accuracy without requiring API calls.
+- **Performance Profiling**: Built-in benchmarking and load testing scripts (`bench_classifier.py`, `load_test.py`) to validate throughput and ensure stable API rate-limit handling (sequential batch processing).
 
 ```bash
 # Train the model
@@ -182,7 +185,7 @@ On platforms like Vercel/Render, the database starts empty. You need to seed it 
 ## 🗺️ Roadmap
 
 - [x] **Core Agent Engine**: Categorization, Extraction, Drafting.
-- [x] **Modern UI**: Dark mode, Glassmorphism, Responsive layout.
+- [x] **Modern UI**: Dark mode, Glassmorphism, Responsive layout, Kanban boards.
 - [x] **Agent Chat**: Context-aware Q&A with inbox data.
 - [x] **Advanced Analytics**: Mission Control Dashboard with live feed.
 - [x] **Meeting Prep**: AI-generated briefs and context.
